@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#16a34a" />
+  <title>🐾 JP ESG 碳盤樂 v5.4.3</title>
+  <link rel="icon" type="image/jpeg" sizes="32x32" href="https://raw.githubusercontent.com/Sethjesus/Photo/main/UDM%20New%20Logo.jpg?v=3">
+  <style>
+    :root{ --ink:#0f172a; --panel:#ffffffcc; --shadow:0 10px 24px rgba(0,0,0,.08); --bg:#f7fbff; --ok:#16a34a; --warn:#f59e0b; --bad:#ef4444; }
+    *{box-sizing:border-box} html,body{height:100%}
+    body{margin:0;font-family:ui-rounded,"Microsoft JhengHei",system-ui,-apple-system,Segoe UI,Roboto,Noto Sans,sans-serif;color:var(--ink);
+      background:radial-gradient(1200px 800px at 20% -10%, #e6f5ff 0, transparent 60%),radial-gradient(1200px 800px at 120% 0, #ecfff3 0, transparent 60%),var(--bg);
+      display:flex;align-items:center;justify-content:center;padding:14px}
+    .app{max-width:1240px;width:100%}
+    .topbar{display:flex;gap:10px;justify-content:space-between;align-items:center;background:var(--panel);backdrop-filter:blur(10px);border-radius:18px;padding:10px 12px;box-shadow:var(--shadow)}
+    .brand{display:flex;align-items:center;gap:10px;font-weight:900}
+    .brand img{width:34px;height:34px;border-radius:50%;box-shadow:0 4px 0 #22c55e}
+    .controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .chip{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;background:#fff;box-shadow:var(--shadow);font-weight:800}
+    .btn{border:none;background:#fff;border-radius:999px;padding:9px 14px;font-weight:800;cursor:pointer;box-shadow:0 6px 0 #e5e7eb}
+    .btn:active{transform:translateY(3px);box-shadow:0 2px 0 rgba(0,0,0,.25)}
+    .btn.primary{background:linear-gradient(180deg,#bef264,#86efac);color:#064e3b;box-shadow:0 6px 0 #22c55e}
+    .btn.blue{background:linear-gradient(180deg,#bae6fd,#93c5fd);color:#08324a;box-shadow:0 6px 0 #60a5fa}
+    .arena{margin-top:12px}
+    .board{position:relative;height:min(64vh,620px);min-height:500px;width:100%;border-radius:22px;overflow:hidden;outline:6px solid #fff;border:3px dashed #bbf7d0;box-shadow:var(--shadow)}
+    .bg-forest{background:linear-gradient(180deg,#ecfdf5,#e0ffe9)}
+    .bg-city{background:linear-gradient(180deg,#eff6ff,#e0f2ff)}
+    .bg-ocean{background:linear-gradient(180deg,#e0f2fe,#e0f7fa)}
+    .back-illus{position:absolute;right:8px;bottom:6px;font-size:56px;opacity:.25;pointer-events:none}
+    .hud{position:absolute;left:10px;top:10px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;z-index:2}
+    .hud .tag{border-radius:999px;padding:6px 10px;background:#fff;box-shadow:var(--shadow);font-weight:800}
+    .goalbar{position:absolute;left:10px;right:10px;top:46px;height:10px;background:#fff;border-radius:999px;box-shadow:var(--shadow)}
+    .fill{height:100%;width:0%;background:linear-gradient(90deg,#86efac,#60a5fa);border-radius:999px;transition:width .25s}
+    .hpbar{position:absolute;left:10px;right:10px;top:64px;height:12px;background:#fee2e2;border-radius:12px;overflow:hidden;box-shadow:var(--shadow);display:none}
+    .hpfill{height:100%;width:100%;background:linear-gradient(90deg,#fecaca,#ef4444)}
+    .token{position:absolute;width:84px;height:84px;cursor:pointer}
+    .bubble{position:absolute;inset:0;border-radius:22px;background:radial-gradient(circle at 30% 25%, #fff 0 30%, #eafff0 68%);border:3px solid #bbf7d0;box-shadow:0 10px 20px rgba(22,163,74,.18);display:grid;place-items:center;transition:transform .12s}
+    .bubble:active{transform:scale(.92)}
+    .emoji{font-size:40px;filter:drop-shadow(0 3px 0 rgba(0,0,0,.08))}
+    .tree{position:absolute;bottom:6px;left:0;transform:translateX(var(--x,0));font-size:24px;filter:drop-shadow(0 2px 0 rgba(0,0,0,.15))}
+    .toast{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:#fff;border-radius:16px;padding:8px 12px;box-shadow:var(--shadow);font-weight:900;opacity:0;z-index:3}
+    .toast.show{animation:toast .9s ease both}
+    @keyframes toast{0%{opacity:0;transform:translate(-50%,-50%) scale(.9)}14%{opacity:1;transform:translate(-50%,-50%) scale(1)}86%{opacity:1}100%{opacity:0}}
+    .boss{position:absolute;width:130px;height:130px;border-radius:50%;left:50%;top:56%;transform:translate(-50%,-50%);background:radial-gradient(circle at 40% 35%, #374151 0 45%, #111827 70%);box-shadow:0 10px 30px rgba(0,0,0,.25), inset 0 -8px 20px rgba(255,255,255,.05);display:grid;place-items:center;z-index:1}
+    .boss::after{content:"👀";font-size:40px;transform:translateY(-6px)}
+    .boss.aura{box-shadow:0 10px 30px rgba(0,0,0,.25),0 0 22px rgba(239,68,68,.6), inset 0 -8px 20px rgba(255,255,255,.05)}
+    .shockwave{position:absolute;left:50%;top:56%;transform:translate(-50%,-50%);width:20px;height:20px;border-radius:50%;border:3px solid rgba(239,68,68,.8);opacity:.8;animation:boom 1.2s ease-out both;z-index:1}
+    @keyframes boom{from{width:20px;height:20px;opacity:.85}to{width:500px;height:500px;opacity:0}}
+    .missile{position:absolute;width:18px;height:18px;border-radius:50%;background:#ef4444;box-shadow:0 0 8px rgba(239,68,68,.7);z-index:1}
+    .drain{position:absolute;left:50%;top:56%;transform:translate(-50%,-50%);width:190px;height:190px;border-radius:50%;box-shadow:inset 0 0 22px rgba(59,130,246,.55);opacity:.85;animation:pulse 1.2s ease-in-out infinite;z-index:1}
+    @keyframes pulse{0%{transform:translate(-50%,-50%) scale(.9)}50%{transform:translate(-50%,-50%) scale(1.05)}100%{transform:translate(-50%,-50%) scale(.9)}}
+    .confetti{position:fixed;width:8px;height:14px;top:-10px;left:50%;border-radius:2px;opacity:.9;animation:fall 1.6s linear forwards;z-index:5}
+    @keyframes fall{to{transform:translateY(120vh) rotate(540deg);opacity:0}}
+    .fade-enter{animation:fadeIn .35s ease both}
+    @keyframes fadeIn{from{opacity:0;transform:scale(.98)}to{opacity:1;transform:scale(1)}}
+    .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.25);z-index:50}
+    .modal.show{display:flex}
+    .card{background:#fff;border-radius:18px;padding:18px;box-shadow:var(--shadow);width:min(95vw,1040px)}
+    .card h3{margin:0 0 8px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
+    .node{border:2px dashed #d1fae5;border-radius:12px;padding:10px}
+    .tabbar{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 10px;overflow-x:auto;white-space:nowrap}
+
+    /* --- Quest Pager --- */
+    .pager-wrap{display:flex;flex-direction:column;gap:10px}
+    .pager{position:relative;overflow:hidden;border-radius:14px}
+    .pager-track{
+      display:flex;
+      transition:transform .28s ease;
+      will-change: transform;
+    }
+    .pager-page{min-width:100%;padding:10px;box-sizing:border-box}
+    .pager-nav{display:flex;gap:8px;align-items:center;justify-content:center}
+    .pager-dot{width:8px;height:8px;border-radius:50%;background:#e5e7eb}
+    .pager-dot.active{background:#16a34a}
+    .pager-btn{border:none;border-radius:10px;padding:6px 10px;background:#fff;box-shadow:0 4px 0 #e5e7eb;cursor:pointer}
+
+    /* ✅ 全橫列版任務樣式（橫向捲動） */
+    .todo-list{list-style:none;padding:0;margin:8px 0;display:flex;flex-wrap:nowrap;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory}
+    .todo-list::-webkit-scrollbar{height:8px}
+    .todo-list::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:999px}
+    .todo-list li{flex:0 0 300px;background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:12px 14px;box-shadow:var(--shadow);scroll-snap-align:start;display:flex;flex-direction:column;justify-content:space-between}
+    .todo-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+    .todo-top label{display:flex;align-items:center;gap:10px;font-size:16px;line-height:1.4}
+    .todo-badge{font-size:13px;color:#0f172a99;background:#f3f4f6;border-radius:10px;padding:2px 8px;min-width:64px;text-align:center}
+    .todo-bar{height:6px;border-radius:6px;background:#f1f5f9;overflow:hidden;margin-top:4px}
+    .todo-fill{height:100%;width:0;background:linear-gradient(90deg,#86efac,#60a5fa)}
+
+    /* ✅ GHG 14064 對照擴充表格 */
+    .ghg-table{width:100%;border-collapse:collapse;margin-top:12px;min-width:820px}
+    .ghg-table th,.ghg-table td{border:1px solid #d1d5db;padding:6px 10px;text-align:left;vertical-align:top}
+    .ghg-table th{background:#f3f4f6}
+    .ghg-table caption{caption-side:top;font-weight:700;margin-bottom:8px}
+
+    @media (max-width:680px){ .controls{gap:6px} .chip{padding:6px 10px} .token{width:74px;height:74px} }
+
+    /* ===== Quest 版面一致化修正 ===== */
+    #questModal .pager-page { padding: 0; }
+    #questModal .pager-page > .grid { margin: 0; display:block; }
+    #questModal .pager-page > .grid > .node { width: 100%; }
+
+    #questModal .node .node { padding: 0; border: none; box-shadow: none; }
+
+    #questModal .todo-list { padding: 0 8px; margin: 8px 0; }
+    #questModal .todo-list li { flex: 0 0 280px; }
+    #questModal .todo-top { margin-bottom: 6px; }
+
+    #questModal .ghg-table { min-width: 960px; width: 100%; }
+    #questModal .node[style*="overflow:auto"] { max-width: 100%; }
+
+    #questModal .card { max-height: 86vh; overflow: auto; }
+    #questModal { overflow-y: auto; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="brand">
+      <img src="https://raw.githubusercontent.com/Sethjesus/Photo/main/UDM%20New%20Logo.jpg?v=3" alt="UDM Logo"/>
+      <div style="display:flex;flex-direction:column;line-height:1.1">
+        <b id="title">碳盤樂 ESG v5.4.3</b>
+        <small id="subtitle" style="opacity:.8">UDM｜邊玩邊學</small>
+      </div>
+    </div>
+    <div class="controls">
+      <span class="chip">👤 <b id="player">Player</b></span>
+      <span class="chip">關卡：<b id="level">1</b>/10</span>
+      <span class="chip">難度：
+        <select id="difficulty">
+          <option value="easy">簡單</option>
+          <option value="normal" selected>普通</option>
+          <option value="hard">困難</option>
+        </select>
+      </span>
+      <span class="chip" id="scoreChip">ESG 分數：<b id="score">0</b></span>
+      <span class="chip"><span id="treesLabel">已種樹：</span><b id="trees">0</b> 棵</span>
+      <button class="btn" id="mapBtn">🗺️ 地圖</button>
+      <button class="btn" id="treeBtn">🌳 圖鑑</button>
+      <button class="btn" id="questBtn">📅 任務</button>
+      <button class="btn" id="quizBtn">🧠 小知識</button>
+      <button class="btn" id="factsBtn">📚 知識庫</button>
+      <button class="btn" id="achBtn">🏆 成就</button>
+      <button class="btn" id="lbBtn">⭐ 排行</button>
+      <button class="btn" id="musicBtn">🎵 音樂</button>
+      <button class="btn primary" id="startBtn">開始</button>
+      <button class="btn blue" id="pauseBtn">暫停</button>
+      <button class="btn" id="langBtn" aria-pressed="false">🌐 EN</button>
+      <button class="btn" id="soundBtn" aria-pressed="false">🔈</button>
+    </div>
+  </div>
+
+  <div class="arena">
+    <div class="board bg-forest" id="board">
+      <div class="back-illus" id="illus">🌲</div>
+      <div class="hud">
+        <span class="tag">🔥 <b id="combo">0x</b></span>
+        <span class="tag">⏱ <b id="time">60</b>s</span>
+        <span class="tag">🎯 目標：<b id="goal">120</b></span>
+      </div>
+      <div class="goalbar"><div class="fill" id="goalFill"></div></div>
+      <div class="hpbar" id="hpbar"><div class="hpfill" id="hpfill"></div></div>
+    </div>
+    <div class="hint" id="versionNote">v5.4.3：任務橫列＋GHG 表格（含延伸章節）；每日/每週任務固定；問答穩定顯示。</div>
+  </div>
+</div>
+
+<!-- 取名 -->
+<div class="modal" id="nameModal"><div class="card">
+  <h3>取個名字吧</h3>
+  <div class="node"><input id="nameInput" placeholder="你的名字" style="width:100%"></div>
+  <div style="text-align:right"><button class="btn primary" id="saveName">儲存</button></div>
+</div></div>
+
+<!-- 地圖 -->
+<div class="modal" id="mapModal"><div class="card">
+  <h3>🗺️ 關卡地圖</h3>
+  <div class="grid" id="mapGrid"></div>
+  <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" id="resetProgress">重置進度</button><button class="btn" data-close="mapModal">關閉</button></div>
+</div></div>
+
+<!-- 圖鑑 -->
+<div class="modal" id="treeModal"><div class="card">
+  <h3>🌳 樹種圖鑑</h3>
+  <div class="grid" id="dexGrid"></div>
+  <div style="text-align:right"><button class="btn" data-close="treeModal">關閉</button></div>
+</div></div>
+
+<!-- 任務中心（Pager 5 頁） -->
+<div class="modal" id="questModal"><div class="card">
+  <h3>📅 任務中心</h3>
+
+  <div class="pager-wrap">
+    <div class="pager" id="questPager">
+      <div class="pager-track" id="questTrack">
+        <!-- 0：每日 -->
+        <section class="pager-page">
+          <div class="grid">
+            <div class="node">
+              <b>🎯 每日任務</b>
+              <ul id="dailyList" class="todo-list"></ul>
+            </div>
+          </div>
+        </section>
+        <!-- 1：每週 -->
+        <section class="pager-page">
+          <div class="grid">
+            <div class="node">
+              <b>📆 每週任務</b>
+              <ul id="weeklyList" class="todo-list"></ul>
+            </div>
+          </div>
+        </section>
+        <!-- 2：清單（S1/S2/S3） -->
+        <section class="pager-page">
+          <div class="grid">
+            <div class="node">
+              <b>📑 碳盤查任務流（S1 / S2 / S3）</b>
+              <table class="table" style="width:100%;border-collapse:separate;border-spacing:0 6px">
+                <tbody id="ghgBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+        <!-- 3：GHG / ISO 14064-1 對照表（表格） -->
+        <section class="pager-page">
+          <div class="grid">
+            <div class="node">
+              <b>🧾 GHG / ISO 14064-1 對照表</b>
+              <div class="node" style="overflow:auto">
+                <table class="ghg-table">
+                  <thead>
+                    <tr><th>環保署規範範疇</th><th>GHG Protocol</th><th>ISO 14064-1:2018</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><b>盤查溫室氣體</b></td>
+                      <td>京都議定書涵蓋 CO₂、CH₄、N₂O、SF₆、HFCs、PFCs 等 6 類氣體；其他氣體另行揭露。</td>
+                      <td>常用清單含 CO₂、CH₄、N₂O、NF₃、SF₆、HFCs、PFCs 等。</td>
+                    </tr>
+                    <tr>
+                      <td><b>直接排放</b></td>
+                      <td>範疇 1：直接溫室氣體排放</td>
+                      <td>類別 1：直接溫室氣體排放與移除</td>
+                    </tr>
+                    <tr>
+                      <td><b>能源間接排放</b></td>
+                      <td>範疇 2：電力之間接溫室氣體排放</td>
+                      <td>類別 2：進口能源的間接溫室氣體排放</td>
+                    </tr>
+                    <tr>
+                      <td><b>其他間接排放</b></td>
+                      <td>範疇 3：其他間接排放（15 類：採購、資本財、燃料與能源上游、運輸與配送、廢棄物、商旅、通勤、上游租賃、下游運輸配送、產品加工、產品使用、期末處置、下游租賃、加盟、投資）</td>
+                      <td>類別 3–6：運輸、產品使用、範圍外間接排放（投資/特許/租賃/加盟）與其他來源間接排放</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+        <!-- 4：盤查定義與應用延伸 -->
+        <section class="pager-page">
+          <div class="grid">
+            <div class="node">
+              <b>📘 盤查定義與應用延伸</b>
+              <div class="node" style="overflow:auto;margin-top:8px">
+                <b>🧭 組織邊界（Boundary Definition）</b>
+                <table class="ghg-table">
+                  <thead><tr><th>項目</th><th>說明</th></tr></thead>
+                  <tbody>
+                    <tr><td>股權法 (Equity Share)</td><td>依企業在被投資單位之持股比例計算排放量。</td></tr>
+                    <tr><td>財務控制 (Financial Control)</td><td>企業具有財務決策權（預算/資本配置等）者，納入盤查邊界。</td></tr>
+                    <tr><td>營運控制 (Operational Control)</td><td>企業能主導日常營運與政策者，應納入盤查。</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="node" style="overflow:auto;margin-top:8px">
+                <b>🧩 營運控制法應用</b>
+                <table class="ghg-table">
+                  <thead><tr><th>分類</th><th>範例</th><th>是否納入盤查</th></tr></thead>
+                  <tbody>
+                    <tr><td>公司自有廠房與設備</td><td>自營生產線、辦公室</td><td>✅ 是</td></tr>
+                    <tr><td>委外加工廠</td><td>無日常管理權</td><td>❌ 否（可列入 S3）</td></tr>
+                    <tr><td>合資企業</td><td>持股但無營運控制權</td><td>➖ 依股權法按比例列入</td></tr>
+                    <tr><td>委外物流或租賃</td><td>由第三方運作</td><td>✅ 若由企業指揮運作則納入</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="node" style="overflow:auto;margin-top:8px">
+                <b>🔄 碳盤查流程（Carbon Inventory Flow）</b>
+                <table class="ghg-table">
+                  <thead><tr><th>步驟</th><th>說明</th></tr></thead>
+                  <tbody>
+                    <tr><td>1. 界定組織與營運邊界</td><td>確認盤查對象範圍（含子公司、工廠、辦公室）。</td></tr>
+                    <tr><td>2. 辨識排放源</td><td>盤點能源、燃料、設備、運輸、廢棄物等來源。</td></tr>
+                    <tr><td>3. 蒐集活動數據</td><td>燃料量、電表度數、里程、噸公里、重量等。</td></tr>
+                    <tr><td>4. 套用排放係數</td><td>選用政府或國際指南（IPCC、EPA、DEFRA、在地電力係數）。</td></tr>
+                    <tr><td>5. 計算排放量</td><td>活動數據 × 排放係數（必要時乘以 GWP）。</td></tr>
+                    <tr><td>6. 審查與查驗</td><td>內部或第三方審查資料來源、邊界與計算邏輯。</td></tr>
+                    <tr><td>7. 揭露與改善</td><td>年度報告揭露並設定減碳目標與行動。</td></tr>
+                    <tr><td>16+4聯繫電話窗口</td><td>溫經理: 02-3224-7916。</td></tr>
+                     <p>📍 <a href="https://www.idipckeelung.org.tw/%E3%80%90%E8%A3%9C%E5%8A%A9%E8%B3%87%E8%A8%8A%E3%80%91%E5%9B%A0%E6%87%89%E4%B8%AD%E5%B0%8F%E4%BC%81%E6%A5%AD%E9%9C%80%E6%B1%82%EF%BC%8C%E7%94%B3%E8%AB%8B%E6%97%A5%E6%9C%9F%E6%8B%89%E9%95%B7%E8%87%B312/"
+           target="_blank" rel="noopener"><b>👉 點我前往申請 16+4 碳盤查補助計畫</b></a></p>
+
+                  </tbody>
+                </table>
+              </div>
+              <div class="node" style="overflow:auto;margin-top:8px">
+                <b>⚙️ 排放係數範例（示意）</b>
+                <table class="ghg-table">
+                  <thead><tr><th>類別</th><th>單位</th><th>參考係數（kgCO₂e）</th><th>常見來源</th></tr></thead>
+                  <tbody>
+                    <tr><td>電力（台灣地區）</td><td>kWh</td><td>0.495</td><td>環保署/能源局公布之年度係數</td></tr>
+                    <tr><td>汽油</td><td>L</td><td>2.27</td><td>IPCC 2006</td></tr>
+                    <tr><td>柴油</td><td>L</td><td>2.68</td><td>IPCC 2006</td></tr>
+                    <tr><td>天然氣</td><td>Nm³</td><td>2.05</td><td>能源局因子</td></tr>
+                    <tr><td>員工通勤（小客車）</td><td>km</td><td>0.21</td><td>DEFRA 2023</td></tr>
+                    <tr><td>廢棄物掩埋</td><td>kg</td><td>0.45</td><td>EPA WARM</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+    <div class="pager-nav">
+      <button class="pager-btn" id="questPrev">◀</button>
+      <span id="questDots" style="display:flex;gap:6px"></span>
+      <button class="pager-btn" id="questNext">▶</button>
+    </div>
+  </div>
+
+  <div style="text-align:right;margin-top:8px">
+    <button class="btn" data-close="questModal">關閉</button>
+  </div>
+</div></div>
+
+<!-- 問答 -->
+<div class="modal" id="quizModal"><div class="card">
+  <h3>🧠 小知識問答</h3>
+  <div class="tabbar" id="qTabs"></div>
+  <div class="node" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px">
+    <input type="file" id="csvQ" accept=".csv"><button class="btn" id="importCsv">匯入 CSV</button>
+    <button class="btn" id="exportCsv">匯出 CSV</button>
+    <span style="opacity:.7;font-size:12px">格式：cat,q,a1|a2|a3|a4,correct_index,why</span>
+  </div>
+  <div id="quizStats" class="node" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+    <div>🎯 總題數：<b id="statTotal">0</b></div>
+    <div>✅ 答對：<b id="statRight">0</b></div>
+    <div>❌ 答錯：<b id="statWrong">0</b></div>
+    <div>📊 正確率：<b id="statAcc">0%</b></div>
+  </div>
+  <div id="quizBox"></div>
+  <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+    <button class="btn" id="nextQ">下一題</button>
+    <button class="btn" data-close="quizModal">關閉</button>
+  </div>
+</div></div>
+
+<!-- 知識庫 -->
+<div class="modal" id="factsModal"><div class="card">
+  <h3>📚 知識庫</h3>
+  <ul id="factsList" style="line-height:1.8"></ul>
+  <div style="text-align:right"><button class="btn" data-close="factsModal">關閉</button></div>
+</div></div>
+
+<!-- 成就 -->
+<div class="modal" id="achModal"><div class="card">
+  <h3>🏆 成就</h3>
+  <div class="grid" id="achGrid"></div>
+  <div style="text-align:right"><button class="btn" data-close="achModal">關閉</button></div>
+</div></div>
+
+<!-- 排行 -->
+<div class="modal" id="lbModal"><div class="card">
+  <h3>⭐ 排行榜</h3>
+  <table class="table" style="width:100%;border-collapse:separate;border-spacing:0 6px"><thead><tr><th>#</th><th>玩家</th><th>關卡</th><th>分數</th><th>樹</th><th>日期</th></tr></thead><tbody id="lbBody"></tbody></table>
+  <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:8px">
+    <input id="firebaseUrl" placeholder="Firebase REST URL (可選)" style="flex:1;min-width:260px">
+    <input id="sheetsUrl" placeholder="Google Apps Script 部署網址 (可選)" style="flex:1;min-width:260px">
+    <button class="btn" id="pushOnline">上傳</button>
+    <button class="btn" id="pullOnline">更新</button>
+    <button class="btn" data-close="lbModal">關閉</button>
+  </div>
+</div></div>
+
+<!-- 音樂 -->
+<div class="modal" id="musicModal"><div class="card">
+  <h3>🎵 音樂與音量</h3>
+  <div class="node" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+    <div>
+      <b>曲目</b>
+      <select id="musicSel" style="width:100%;margin-top:6px">
+        <option value="auto">自動輪播（隨關卡）</option>
+        <option value="forest">森林曲</option>
+        <option value="city">城市曲</option>
+        <option value="ocean">海洋曲</option>
+        <option value="boss">Boss 曲</option>
+        <option value="none">無音樂</option>
+      </select>
+    </div>
+    <div>
+      <b>音量</b>
+      <input id="vol" type="range" min="0" max="100" value="60"/>
+      <div style="opacity:.75;font-size:12px">滑動調整音量</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+    <button class="btn" id="musicPreview">試聽</button>
+    <button class="btn primary" id="musicSave">套用</button>
+    <button class="btn" data-close="musicModal">關閉</button>
+  </div>
+</div></div>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+  function toast(msg){ const t=document.createElement('div'); t.className='toast show'; t.textContent=msg; board.appendChild(t); setTimeout(()=>t.remove(),1200); }
+  function celebrate(){ for(let i=0;i<80;i++){ const c=document.createElement('div'); c.className='confetti'; c.style.left=(Math.random()*100)+'%'; c.style.background='hsl('+(Math.random()*360)+',90%,60%)'; c.style.animationDuration=(1.2+Math.random()*1.4)+'s'; document.body.appendChild(c); setTimeout(()=>c.remove(),2200);} }
+
+  // 語系
+  let LANG=localStorage.getItem('esg.lang')||'zh';
+  function applyLang(){ const zh=(LANG==='zh'); $('langBtn').textContent=zh?'🌐 EN':'🌐 中文'; $('treesLabel').textContent=zh?'已種樹：':'Trees:'; }
+
+  // 玩家
+  let playerName=localStorage.getItem('esg.player')||'Player'; $('player').textContent=playerName;
+
+  // 難度
+  const DIFF={ easy:{goalMul:.85,timePlus:10,spawnMul:1.15}, normal:{goalMul:1,timePlus:0,spawnMul:1}, hard:{goalMul:1.25,timePlus:-5,spawnMul:.85} };
+  let diff=localStorage.getItem('esg.diff')||'normal'; $('difficulty').value=diff;
+  $('difficulty').addEventListener('change',()=>{ diff=$('difficulty').value; localStorage.setItem('esg.diff',diff); toast('難度變更'); if(running){ startLevel(LV); } });
+
+  // 聲音與音樂
+  let actx=null; try{actx=new (window.AudioContext||window.webkitAudioContext)()}catch(e){actx=null}
+  ;['pointerdown','keydown','touchstart'].forEach(ev=>addEventListener(ev,()=>{ if(actx&&actx.state==='suspended'){try{actx.resume()}catch(e){}} },{passive:true}));
+  let soundOn=false; function blip(f=720,d=.12){ if(!soundOn||!actx) return; const o=actx.createOscillator(), g=actx.createGain(); o.type='triangle'; o.frequency.value=f; g.gain.value=.0001; o.connect(g).connect(actx.destination); o.start(); const t=actx.currentTime; g.gain.exponentialRampToValueAtTime(.14,t+.02); g.gain.exponentialRampToValueAtTime(.00001,t+d); o.stop(t+d+.02) }
+  const music={ forest:{tempo:108,type:'triangle',vol:.2,steps:[[440,660],[0],[523],[0],[392,784],[0],[523],[0]]},
+                city:{tempo:120,type:'sawtooth',vol:.2,steps:[[330],[0],[392],[0],[494],[0],[392],[0]]},
+                ocean:{tempo:96,type:'sine',vol:.18,steps:[[294],[0],[330],[0],[392],[0],[330],[0]]},
+                boss:{tempo:136,type:'square',vol:.25,steps:[[196,392],[0],[220,440],[0],[247,494],[0],[220,440],[0]]}};
+  let musicMode=localStorage.getItem('esg.music')||'auto';
+  let vol=(+localStorage.getItem('esg.vol')||60)/100;
+  let musicBus=actx?actx.createGain():null; if(musicBus&&actx){ musicBus.gain.value=vol; musicBus.connect(actx.destination); }
+  let seqTimer=null, seqBeat=.5, seqStep=0;
+  function fadeTo(target=vol,secs=.5){ if(!actx||!musicBus) return; const now=actx.currentTime; try{musicBus.gain.cancelScheduledValues(now)}catch(e){} musicBus.gain.setValueAtTime(musicBus.gain.value,now); musicBus.gain.linearRampToValueAtTime(clamp(target,0,1), now+secs); }
+  function stopSeq(){ if(seqTimer){clearInterval(seqTimer);seqTimer=null} fadeTo(0,.3) }
+  function playTrack(kind){ if(!actx||!musicBus) return; if(kind==='none'){stopSeq();return} const p=music[kind]||music.forest; stopSeq(); seqBeat=60/(p.tempo||110); seqStep=0; seqTimer=setInterval(()=>{ const notes=p.steps[seqStep%p.steps.length]; for(const n of notes){ if(n){ const o=actx.createOscillator(), g=actx.createGain(); o.type=p.type; o.frequency.value=n; g.gain.value=.00001; o.connect(g).connect(musicBus); const t=actx.currentTime; o.start(); g.gain.exponentialRampToValueAtTime(p.vol,t+.01); g.gain.exponentialRampToValueAtTime(.00001,t+seqBeat*.9); o.stop(t+seqBeat);} } seqStep++; }, seqBeat*1000); fadeTo(vol,.4); }
+  function applyMusic(bg){ if(musicMode==='none') return stopSeq(); if(musicMode==='auto'){ playTrack(bg==='city'?'city':bg==='ocean'?'ocean':'forest'); } else { playTrack(musicMode); } }
+
+  // 關卡配置
+  const LEVELS=[
+    {goal:120,time:60,spawn:700,quiz:1,bg:'forest',illus:'🌲',boss:false},
+    {goal:200,time:55,spawn:650,quiz:1,bg:'city',illus:'🏙️',boss:false},
+    {goal:280,time:52,spawn:620,quiz:2,bg:'ocean',illus:'🌊',boss:true},
+    {goal:360,time:50,spawn:600,quiz:2,bg:'forest',illus:'🦌',boss:false},
+    {goal:460,time:48,spawn:560,quiz:2,bg:'city',illus:'🚋',boss:true},
+    {goal:560,time:46,spawn:520,quiz:3,bg:'ocean',illus:'🐟',boss:false},
+    {goal:680,time:44,spawn:500,quiz:3,bg:'forest',illus:'⛰️',boss:false},
+    {goal:820,time:42,spawn:480,quiz:3,bg:'city',illus:'🌉',boss:true},
+    {goal:960,time:40,spawn:460,quiz:4,bg:'ocean',illus:'🪸',boss:false},
+    {goal:1120,time:38,spawn:440,quiz:4,bg:'forest',illus:'🦅',boss:true}
+  ];
+  let LV=0; function setBg(kind){ board.classList.remove('bg-forest','bg-city','bg-ocean'); board.classList.add('bg-'+(kind||'forest')); $('illus').textContent=(LEVELS[LV]&&LEVELS[LV].illus)||'🌲'; }
+  function renderMap(){ const g=$('mapGrid'); g.innerHTML=''; const best=+(localStorage.getItem('esg.bestLV')||1); LEVELS.forEach((cfg,i)=>{ const lock=i+1>best; const n=document.createElement('div'); n.className='node fade-enter'; n.innerHTML='<b>關卡 '+(i+1)+'</b> <span style="opacity:.75">'+cfg.bg+'｜目標'+cfg.goal+'｜'+cfg.time+'s '+(cfg.boss?'｜Boss':'')+'</span><div style="margin-top:6px;text-align:right"><button class="btn" '+(lock?'disabled':'')+' data-lv="'+i+'">開始</button></div>'; g.appendChild(n); }); g.querySelectorAll('button[data-lv]').forEach(b=>b.addEventListener('click',function(){ $('mapModal').classList.remove('show'); startLevel(+this.dataset.lv); })); }
+  function saveBestLV(lv){ const best=+(localStorage.getItem('esg.bestLV')||1); if(lv>best){ localStorage.setItem('esg.bestLV', lv); }}
+
+  const board=$('board'), fill=$('goalFill'), hpbar=$('hpbar'), hpfill=$('hpfill');
+  let score=0, combo=0, timeLeft=60, running=false, planted=0, spawnTimer=null, tickTimer=null, bossEl=null, bossHp=0, bossTimer=null, drainAura=null;
+  const EMOJIS=['🍀','🌿','🌳','💧','⚡','🌎'];
+
+  function startLevel(i){ LV=i; const cfg=LEVELS[LV]||LEVELS[0]; const d=DIFF[diff]||DIFF.normal;
+    const goal=Math.round(cfg.goal*d.goalMul), time=clamp(cfg.time+d.timePlus,20,999), spawn=Math.round(cfg.spawn*d.spawnMul);
+    setBg(cfg.bg); applyMusic(cfg.bg); score=0; combo=0; timeLeft=time; $('level').textContent=(LV+1); $('goal').textContent=goal; $('time').textContent=timeLeft; $('score').textContent=0; $('trees').textContent=planted; fill.style.width='0%'; hpbar.style.display='none';
+    if(spawnTimer) clearInterval(spawnTimer); if(tickTimer) clearInterval(tickTimer);
+    running=true; spawnTimer=setInterval(spawnToken, spawn); tickTimer=setInterval(()=>{ if(!running) return; timeLeft--; $('time').textContent=timeLeft; if(timeLeft<=0){ gameOver(false); } },1000);
+  }
+  function spawnToken(){ if(!running) return; const t=document.createElement('div'); t.className='token'; const w=board.clientWidth, h=board.clientHeight; t.style.left=(Math.random()*(w-96)+6)+'px'; t.style.top=(Math.random()*(h-160)+100)+'px'; t.innerHTML='<div class="bubble"><div class="emoji">'+EMOJIS[Math.floor(Math.random()*EMOJIS.length)]+'</div></div>'; t.addEventListener('click',function(){hitToken(t)}); board.appendChild(t); setTimeout(()=>{ t.remove(); }, 3200); }
+  function currentGoal(){ return parseInt($('goal').textContent,10)||0; }
+  function hitToken(t){ if(!running) return; blip(720,.08); score+=10; combo=Math.min(99,combo+1); $('score').textContent=score; $('combo').textContent=combo+'x'; fill.style.width=Math.min(100,(score/currentGoal())*100)+'%'; t.remove(); if(score>=currentGoal()){ const cfg=LEVELS[LV]; if(cfg.boss && !bossEl){ spawnBoss(); } else { openQuiz(cfg.quiz); } } }
+
+  // Boss
+  function spawnBoss(){ bossHp=120; hpbar.style.display='block'; hpfill.style.width='100%'; bossEl=document.createElement('div'); bossEl.className='boss'; board.appendChild(bossEl); playTrack('boss');
+    const tap=function(){ bossHp-=6; blip(180,.07); hpfill.style.width=Math.max(0,bossHp)/120*100+'%'; if(bossHp<=0){ cleanup(true); } };
+    board.addEventListener('mousedown',tap); board.addEventListener('touchstart',tap,{passive:true});
+    const bossTimer=setInterval(()=>{ if(!bossEl) return; const r=Math.random(); if(r<0.33){ skillShockwave(); } else if(r<0.66){ skillStun(); } else { Math.random()<0.5? skillMissile(): skillDrain(); } }, 2800);
+    setTimeout(()=>{ if(bossEl){ cleanup(false,true); } }, 14000);
+
+    function cleanup(kill=false,escape=false){ board.removeEventListener('mousedown',tap); board.removeEventListener('touchstart',tap); clearInterval(bossTimer); if(drainAura&&drainAura.parentNode) drainAura.parentNode.removeChild(drainAura); drainAura=null; if (bossEl) { bossEl.remove(); } bossEl=null; hpbar.style.display='none'; applyMusic(LEVELS[LV].bg); if(kill){ toast('Boss 擊敗！'); openQuiz(LEVELS[LV].quiz); } else if(escape){ timeLeft=Math.max(0,timeLeft-10); toast('Boss 逃走！-10s'); } }
+    function skillShockwave(){ const sw=document.createElement('div'); sw.className='shockwave'; board.appendChild(sw); setTimeout(()=>sw.remove(),1200); const lose=30; score=Math.max(0,score-lose); $('score').textContent=score; toast('💥 衝擊波 -'+lose+' 分'); }
+    function skillStun(){ const old=running; running=false; bossEl.classList.add('aura'); toast('⛔ 暈眩 1.5s'); setTimeout(()=>{ running=old; bossEl.classList.remove('aura'); },1500); }
+    function skillMissile(){ let m=document.createElement('div'); m.className='missile'; const w=board.clientWidth, h=board.clientHeight; let x=w/2, y=h*0.56; m.style.left=x+'px'; m.style.top=y+'px'; board.appendChild(m); let t0=Date.now(); let timer=setInterval(()=>{ const target=document.querySelector('.token'); if(!target){ m.remove(); clearInterval(timer); return; } const rectT=target.getBoundingClientRect(); const rectB=board.getBoundingClientRect(); const tx=rectT.left-rectB.left+rectT.width/2; const ty=rectT.top-rectB.top+rectT.height/2; x+= (tx-x)*0.12; y+= (ty-y)*0.12; m.style.left=x+'px'; m.style.top=y+'px'; if(Math.hypot(tx-x,ty-y)<18){ const lose=20; score=Math.max(0,score-lose); $('score').textContent=score; toast('🎯 追蹤飛彈 -'+lose+' 分'); try{target.remove();}catch(e){} clearInterval(timer); m.remove(); } if(Date.now()-t0>3500){ clearInterval(timer); m.remove(); } }, 60); }
+    function skillDrain(){ if(drainAura&&drainAura.parentNode) drainAura.parentNode.removeChild(drainAura); drainAura=document.createElement('div'); drainAura.className='drain'; board.appendChild(drainAura); let t=0; const iv=setInterval(()=>{ if(!drainAura||!bossEl){ clearInterval(iv); return; } t++; if(t%4===0){ const lose=5; score=Math.max(0,score-lose); $('score').textContent=score; } },160); setTimeout(()=>{ if(drainAura&&drainAura.parentNode){ drainAura.remove(); drainAura=null; clearInterval(iv); } }, 2200); }
+  }
+
+  function gameOver(clear){ running=false; clearInterval(spawnTimer); clearInterval(tickTimer); if(clear){ celebrate(); toast('🎉 破關！'); saveLB(); saveBestLV(LV+2); plantTree('🌱'); setTimeout(()=>nextLevel(),900); } else { toast('時間到，下次再來！'); saveLB(); } }
+  function nextLevel(){ if(LV+1>=LEVELS.length){ toast('🏁 全通關！'); return; } startLevel(LV+1); }
+
+  // 樹 & 圖鑑
+  const TREEDEX=[{name:'台灣杉',desc:'固碳佳，針葉樹',stage:0,unlocked:true},{name:'烏心石',desc:'樟科，耐陰耐風',stage:0,unlocked:false},{name:'楓香',desc:'秋季紅葉',stage:0,unlocked:false},{name:'樟樹',desc:'常綠行道樹',stage:0,unlocked:false},{name:'相思樹',desc:'固氮造林樹種',stage:0,unlocked:false},{name:'山毛櫸',desc:'高海拔闊葉',stage:0,unlocked:false}];
+  const stageIcon=['🌱','🌿','🌳'];
+  function plantTree(icon){ planted++; $('trees').textContent=planted; const el=document.createElement('div'); el.className='tree'; el.style.setProperty('--x',(Math.random()*(board.clientWidth-80))+'px'); el.textContent=icon||stageIcon[Math.floor(Math.random()*3)]; board.appendChild(el); setTimeout(()=>el.remove(),4800); }
+  function renderDex(){ const g=$('dexGrid'); g.innerHTML=''; TREEDEX.forEach(t=>{ const n=document.createElement('div'); n.className='node'; const badge=t.unlocked?'<span style="font-size:12px;background:#dcfce7;padding:2px 8px;border-radius:999px">已解鎖</span>':'<span style="font-size:12px;background:#e5e7eb;padding:2px 8px;border-radius:999px">未解鎖</span>'; const stage=stageIcon[t.stage]; n.innerHTML='<b>'+t.name+'</b> '+badge+' <span style="font-size:12px;background:#e2e8f0;padding:2px 8px;border-radius:999px">階段：'+stage+'</span><p style="margin:6px 0 0;opacity:.9">'+t.desc+'</p>'+(t.unlocked?'<button class="btn" data-plant="1">種下</button>':''); g.appendChild(n); }); g.querySelectorAll('button[data-plant]').forEach(b=>b.addEventListener('click',()=>plantTree())); }
+
+  // 成就（示意）
+  const ACH=[{id:'combo30',name:'連擊王',desc:'連擊 ≥ 30',check:()=>combo>=30},{id:'planter',name:'種樹達人',desc:'累計種樹 ≥ 50',check:()=>planted>=50}];
+  function renderAch(){ const g=$('achGrid'); g.innerHTML=''; let owned={}; try{owned=JSON.parse(localStorage.getItem('esg.ach')||'{}')}catch(e){} ACH.forEach(a=>{ const n=document.createElement('div'); n.className='node'; const ok=owned[a.id]; n.innerHTML='<b>'+(ok?'✅':'')+' '+a.name+'</b><p style="margin:6px 0 0;opacity:.9">'+a.desc+'</p>'; g.appendChild(n); }); }
+
+  // 問答 + CSV
+  const CAT=['Energy','Water','Air','Renewable','Carbon']; let weight={Energy:3,Water:2,Air:2,Renewable:3,Carbon:3};
+  function buildTabs(){ const box=$('qTabs'); box.innerHTML=''; CAT.forEach(c=>{ const b=document.createElement('button'); b.className='btn'; b.textContent=c; b.dataset.c=c; b.addEventListener('click',()=>{ weight[c]=Math.min(5,(weight[c]||1)+1); updateTabs(); toast(c+' 權重 +1'); }); box.appendChild(b); }); updateTabs(); }
+  function updateTabs(){ Array.prototype.forEach.call(document.querySelectorAll('#qTabs .btn'),function(b){ const c=b.dataset.c; const on=(weight[c]||1)>=4; if(on){ b.classList.add('primary'); }else{ b.classList.remove('primary'); } }); updateStats(); }
+  let QUIZ=[
+    {cat:'Energy',q:'冷氣溫度每升 1°C 約可省電？',a:['1%','3%','6%','12%'],i:2,why:'建議 26–28°C。'},
+    {cat:'Water',q:'家庭省水好方法？',a:['水管直沖洗車','回收洗衣機餘水拖地','長時間沖澡','全開水龍頭'],i:1},
+    {cat:'Air',q:'PM2.5 指直徑小於？',a:['2.5 μm','10 μm','25 μm','1 μm'],i:0},
+    {cat:'Renewable',q:'何者屬間歇性能源？',a:['水力','地熱','太陽光電','核能'],i:2},
+    {cat:'Carbon',q:'GHG 六大氣體不包含？',a:['CO₂','CH₄','N₂O','O₂'],i:3,why:'六種：CO₂、CH₄、N₂O、HFCs、PFCs、SF₆。'},
+    {cat:'Carbon',q:'範疇2是？',a:['員工通勤','購入電力','廢棄物處理','資本財'],i:1}
+  ];
+  let stats={right:0,wrong:0};
+  function updateStats(){ $('statTotal').textContent=QUIZ.length; $('statRight').textContent=stats.right; $('statWrong').textContent=stats.wrong; const t=stats.right+stats.wrong; $('statAcc').textContent=t?Math.round(stats.right/t*100)+'%':'0%'; }
+  function csvToQuiz(text){
+    const lines=text.split(/\r?\n/).filter(function(x){return x.trim()});
+    let add=0;
+    for(let idx=0; idx<lines.length; idx++){
+      const L = lines[idx];
+      const parts = L.split(',');
+      if(parts.length < 4) continue;
+      const cat = parts[0], q = parts[1], aStr = parts[2], iStr = parts[3], why = parts.slice(4).join(','); // 允許 why 內含逗號
+      const a=aStr.split('|');
+      const i=parseInt(iStr,10);
+      if(isNaN(i)) continue;
+      QUIZ.push({cat:String(cat).trim(),q:String(q).trim(),a:a.map(function(s){return String(s).trim()}),i:i,why:String(why||'').trim()});
+      add++;
+    }
+    toast('📥 題庫已匯入 '+add+' 行'); updateStats();
+  }
+  function quizToCsv(){
+    const esc = function(s){ return String(s==null?'':s).replace(/"/g,'""'); };
+    return QUIZ.map(function(it){
+      const why = '"'+esc(it.why||'')+'"';
+      return [it.cat, it.q, it.a.join('|'), it.i, why].join(',');
+    }).join('\n');
+  }
+  let needCorrect=1, correctThisRound=0, qIndex=-1;
+  function openQuiz(n){ needCorrect=n; correctThisRound=0; $('quizModal').classList.add('show'); buildTabs(); renderQuiz(); }
+  function pickQuestion(){ const bag=[]; for(let i=0;i<QUIZ.length;i++){ const w=weight[QUIZ[i].cat]||1; for(let k=0;k<w;k++) bag.push(i); } return bag[Math.floor(Math.random()*bag.length)]||0; }
+  function renderQuiz(){ qIndex=pickQuestion(); const it=QUIZ[qIndex]; const box=$('quizBox'); let opts=''; for(let idx=0; idx<it.a.length; idx++){ const o=it.a[idx]; opts+='<label style="display:block;margin:6px 0"><input type="radio" name="q" value="'+idx+'"> '+o+'</label>'; } box.innerHTML='<div class="node"><b>['+it.cat+'] '+it.q+'</b>'+opts+'<div style="margin-top:8px"><button class="btn" id="submitQ">提交</button></div><div id="qFeedback" style="margin-top:6px;font-weight:900"></div></div>'; $('submitQ').addEventListener('click',checkQ); updateStats(); }
+  function checkQ(){ const it=QUIZ[qIndex]; const sel=document.querySelector('input[name="q"]:checked'); if(!sel) return; if(+sel.value===it.i){ blip(860,.12); $('qFeedback').textContent='✅ 答對了！'+(it.why?(' '+it.why):''); stats.right++; correctThisRound++; plantTree('🌿'); if(correctThisRound>=needCorrect){ $('quizModal').classList.remove('show'); gameOver(true); } } else { blip(200,.12); $('qFeedback').textContent='❌ 再想想～ '+(it.why||''); stats.wrong++; } updateStats(); }
+  $('nextQ').addEventListener('click',renderQuiz);
+  $('importCsv').addEventListener('click',()=>{ const f=$('csvQ').files&&$('csvQ').files[0]; if(!f) return alert('請先選擇 .csv'); const fr=new FileReader(); fr.onload=e=>csvToQuiz(String((e.target&&e.target.result)||'')); fr.readAsText(f,'utf-8'); });
+  $('exportCsv').addEventListener('click',()=>{ const blob=new Blob([quizToCsv()],{type:'text/csv;charset=utf-8'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='quiz_export.csv'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),500); });
+
+  // Facts
+  const FACTS=['冷氣每高 1°C 約省 6% 電','待機電力佔家戶 5–10%','LED 可省 50% 電','大眾運輸能降低人均排放','PM2.5 直徑小於 2.5μm','GHG 六類：CO₂、CH₄、N₂O、HFCs、PFCs、SF₆','S2：購入電/熱/冷造成的間接排放'];
+  function renderFacts(){ const ul=$('factsList'); ul.innerHTML=''; for(let i=0;i<FACTS.length;i++){ const li=document.createElement('li'); li.textContent=FACTS[i]; ul.appendChild(li); } }
+
+  // Leaderboard
+  function saveLB(){ const raw=localStorage.getItem('esg.lb.v54')||'[]'; let arr=[]; try{arr=JSON.parse(raw)}catch(e){} arr.push({name:localStorage.getItem('esg.player')||'Player', lv:LV+1, score:score, trees:planted, ts:Date.now()}); arr.sort((a,b)=> b.score-a.score); arr=arr.slice(0,50); localStorage.setItem('esg.lb.v54', JSON.stringify(arr)); }
+  function renderLB(){ const raw=localStorage.getItem('esg.lb.v54')||'[]'; let arr=[]; try{arr=JSON.parse(raw)}catch(e){} const tb=$('lbBody'); tb.innerHTML=''; for(let i=0;i<arr.length;i++){ const r=arr[i]; const tr=document.createElement('tr'); const dt=new Date(r.ts); tr.innerHTML='<td>'+(i+1)+'</td><td>'+r.name+'</td><td>'+r.lv+'</td><td>'+r.score+'</td><td>'+r.trees+'</td><td>'+dt.toLocaleDateString()+'</td>'; tb.appendChild(tr); } }
+  async function pushOnline(){ const fb=$('firebaseUrl').value.trim(); const gs=$('sheetsUrl').value.trim(); const data=localStorage.getItem('esg.lb.v54')||'[]'; if(fb){ try{ await fetch(fb,{method:'POST',headers:{'Content-Type':'application/json'},body:data}); toast('Firebase 已上傳'); }catch(e){ alert('Firebase 上傳失敗：'+e.message); } } if(gs){ try{ await fetch(gs,{method:'POST',headers:{'Content-Type':'application/json'},body:data}); toast('Sheets 已上傳'); }catch(e){ alert('Sheets 上傳失敗：'+e.message); } } if(!fb&&!gs){ alert('請輸入 Firebase 或 Sheets 端點'); } }
+  async function pullOnline(){ const fb=$('firebaseUrl').value.trim(); const gs=$('sheetsUrl').value.trim(); try{ if(fb){ const r=await fetch(fb); const a=await r.json(); localStorage.setItem('esg.lb.v54', JSON.stringify(a)); } else if(gs){ const r=await fetch(gs); const a=await r.json(); localStorage.setItem('esg.lb.v54', JSON.stringify(a)); } else { return alert('請輸入端點'); } renderLB(); toast('已更新'); }catch(e){ alert('更新失敗：'+e.message); } }
+
+  // GHG 任務清單（S1/S2/S3）
+  const GHG=[{s:'S1 直接排放', items:['鍋爐/發電機燃料紀錄','製程逸散排放記錄','冷媒補充量'], hint:'公司直接燃燒 / 製程 / 冷媒'},
+             {s:'S2 購入能源間接', items:['電費帳單（月）','蒸汽/冷/熱購買量','再生能源憑證'], hint:'外購電/熱/冷的間接排放'},
+             {s:'S3 其他間接', items:['通勤/差旅里程','上/下游運輸','廢棄物處理','資本財'], hint:'價值鏈上下游活動'}];
+  function renderGHG(){ const tb=$('ghgBody'); tb.innerHTML=''; for(let g=0; g<GHG.length; g++){ const x=GHG[g]; const tr=document.createElement('tr'); const items=x.items.map(function(s){return '<label class="node" style="display:flex;gap:8px;align-items:center"><input type="checkbox" class="ghg"> <span>'+s+'</span></label>';}).join(''); tr.innerHTML='<td style="width:180px;vertical-align:top"><b>'+x.s+'</b><div style="opacity:.75">'+x.hint+'</div></td><td style="vertical-align:top"><div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px">'+items+'</div></td>'; tb.appendChild(tr); } }
+
+  // 任務（每日/每週）
+  function genDailyTasks(){ return [
+    {id:'dq1',text:'完成 1 次關卡',need:1},
+    {id:'dq2',text:'答對 3 題小知識',need:3},
+    {id:'dq3',text:'種下 3 棵樹',need:3}
+  ]; }
+  function genWeeklyTasks(){ return [
+    {id:'wq1',text:'累積 5 次通關',need:5},
+    {id:'wq2',text:'累積 20 題答對',need:20},
+    {id:'wq3',text:'累積 1000 分',need:1000},
+    {id:'wq4',text:'種下 30 棵樹',need:30},
+    {id:'wq5',text:'完成 5 項 GHG 清單勾選',need:5}
+  ]; }
+  function todayKey(){ const d=new Date(); return d.toISOString().slice(0,10); }
+  function weekKey(){ const d=new Date(); const base=new Date(d.getFullYear(),0,1); const wk=Math.ceil((((d-base)/86400000)+base.getDay()+1)/7); return d.getFullYear()+'-W'+wk; }
+  function ensureTasks(){ const dk='esg.daily.'+todayKey(), wk='esg.weekly.'+weekKey(); if(!localStorage.getItem(dk)){ localStorage.setItem(dk, JSON.stringify({tasks:genDailyTasks(),done:{}})); } if(!localStorage.getItem(wk)){ localStorage.setItem(wk, JSON.stringify({tasks:genWeeklyTasks(),done:{}})); } }
+  function taskLi(t,scope){ const done=(scope.done[t.id]); return '<li><div class="todo-top"><label><input type="checkbox" data-scope="'+scope.key+'" data-id="'+t.id+'" '+(done?'checked':'')+'> '+t.text+'</label><span class="todo-badge">'+(scope.key==='D'?'今日':'本週')+'</span></div><div class="todo-bar"><div class="todo-fill" style="width:'+(done?100:0)+'%"></div></div></li>'; }
+  function renderTasks(){ ensureTasks(); const dk='esg.daily.'+todayKey(), wk='esg.weekly.'+weekKey(); const D=JSON.parse(localStorage.getItem(dk)); const W=JSON.parse(localStorage.getItem(wk)); const ulD=$('dailyList'), ulW=$('weeklyList'); if(ulD){ ulD.innerHTML=D.tasks.map(function(t){return taskLi(t,{key:'D',done:D.done})}).join(''); } if(ulW){ ulW.innerHTML=W.tasks.map(function(t){return taskLi(t,{key:'W',done:W.done})}).join(''); }
+    Array.prototype.forEach.call(document.querySelectorAll('#questModal input[type="checkbox"]'),function(cb){ cb.addEventListener('change',onTaskToggle); }); }
+  function onTaskToggle(e){ ensureTasks(); const key=e.target.getAttribute('data-scope'); const id=e.target.getAttribute('data-id'); const store=(key==='D'?'esg.daily.'+todayKey():'esg.weekly.'+weekKey()); const data=JSON.parse(localStorage.getItem(store)); data.done[id]=e.target.checked; localStorage.setItem(store, JSON.stringify(data));
+    const li=e.target.closest('li'); if(li){ const fill=li.querySelector('.todo-fill'); if(fill) fill.style.width=e.target.checked?'100%':'0%'; } }
+
+  // 取名 / 綁定
+  function ensureName(){ if(!localStorage.getItem('esg.player')){ $('nameModal').classList.add('show'); } }
+  $('saveName').addEventListener('click',()=>{ const v=$('nameInput').value.trim()||'Player'; localStorage.setItem('esg.player',v); $('player').textContent=v; $('nameModal').classList.remove('show'); });
+  $('soundBtn').addEventListener('click',()=>{ soundOn=!soundOn; $('soundBtn').textContent=soundOn?'🔊':'🔈'; if(soundOn) blip(640,.1) });
+  $('langBtn').addEventListener('click',()=>{ LANG=(LANG==='zh'?'en':'zh'); localStorage.setItem('esg.lang',LANG); applyLang(); });
+  $('startBtn').addEventListener('click',()=>{ ensureName(); planted=0; $('trees').textContent=0; startLevel(0); });
+  $('pauseBtn').addEventListener('click',()=>{ running=false; clearInterval(spawnTimer); clearInterval(tickTimer); toast('已暫停'); });
+
+  // Modal 綁定
+  $('mapBtn').addEventListener('click',()=>{ renderMap(); $('mapModal').classList.add('show'); });
+  $('resetProgress').addEventListener('click',()=>{ localStorage.setItem('esg.bestLV',1); toast('進度已重置'); renderMap(); });
+  $('treeBtn').addEventListener('click',()=>{ renderDex(); $('treeModal').classList.add('show'); });
+  $('factsBtn').addEventListener('click',()=>{ renderFacts(); $('factsModal').classList.add('show'); });
+  $('achBtn').addEventListener('click',()=>{ renderAch(); $('achModal').classList.add('show'); });
+  $('lbBtn').addEventListener('click',()=>{ renderLB(); $('lbModal').classList.add('show'); });
+  $('pushOnline').addEventListener('click',pushOnline); $('pullOnline').addEventListener('click',pullOnline);
+
+  // 直接開啟小知識按鈕
+  $('quizBtn').addEventListener('click',()=>{ openQuiz(1); });
+
+  // 任務中心
+  $('questBtn').addEventListener('click',()=>{ renderTasks(); renderGHG(); $('questModal').classList.add('show'); bindQuestPager(); showQuestPage(0); });
+
+  // 關閉按鈕
+  Array.prototype.forEach.call(document.querySelectorAll('[data-close]'), function(b){
+    b.addEventListener('click',function(){ const id=b.getAttribute('data-close'); $(id).classList.remove('show'); });
+  });
+
+  // Music modal
+  $('musicBtn').addEventListener('click',()=>{ $('musicSel').value=musicMode; $('vol').value=Math.round(vol*100); $('musicModal').classList.add('show'); });
+  $('musicPreview').addEventListener('click',()=>{ const sel=$('musicSel').value; if(sel==='none') stopSeq(); else playTrack(sel==='auto'?'forest':sel); });
+  $('musicSave').addEventListener('click',()=>{ musicMode=$('musicSel').value; localStorage.setItem('esg.music',musicMode); vol=(+$('vol').value)/100; localStorage.setItem('esg.vol',Math.round(vol*100)); if(musicBus) musicBus.gain.value=vol; $('musicModal').classList.remove('show'); applyMusic((LEVELS[LV]&&LEVELS[LV].bg)||'forest'); });
+
+  // 任務 Pager（動態頁數）
+  let questPage=0;
+  function questPageCount(){ return document.querySelectorAll('#questTrack .pager-page').length; }
+  function showQuestPage(i){
+    const max = questPageCount() - 1;
+    questPage = Math.max(0, Math.min(max, i));
+    const track=$('questTrack');
+    if(track){ track.style.transform='translateX(-'+(questPage*100)+'%)'; }
+    const dots=$('questDots');
+    if(dots){
+      dots.innerHTML='';
+      for(let k=0;k<questPageCount();k++){
+        const d=document.createElement('div');
+        d.className='pager-dot'+(k===questPage?' active':'');
+        d.addEventListener('click',(()=>{ const idx=k; return ()=>showQuestPage(idx); })());
+        dots.appendChild(d);
+      }
+    }
+  }
+  function bindQuestPager(){
+    $('questPrev') && $('questPrev').addEventListener('click',()=>showQuestPage(questPage-1));
+    $('questNext') && $('questNext').addEventListener('click',()=>showQuestPage(questPage+1));
+    const pager=$('questPager'); let sx=0,dx=0;
+    pager && pager.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;dx=0;},{passive:true});
+    pager && pager.addEventListener('touchmove',e=>{dx=e.touches[0].clientX-sx;},{passive:true});
+    pager && pager.addEventListener('touchend',()=>{ if(Math.abs(dx)>50){ showQuestPage(questPage+(dx<0?1:-1)); } });
+  }
+
+  // 初始化
+  document.addEventListener('DOMContentLoaded',()=>{ applyLang(); renderDex(); renderFacts(); renderMap(); });
+})();
+</script>
+</body>
+</html>
