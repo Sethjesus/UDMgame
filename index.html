@@ -10,8 +10,9 @@
   <title>🐾 JP ESG 碳盤樂 v5.4.3</title>
   <link rel="icon" type="image/jpeg" sizes="32x32" href="https://raw.githubusercontent.com/Sethjesus/Photo/main/UDM%20New%20Logo.jpg?v=3">
   <!-- PWA additions -->
-  <link rel="manifest" href="./manifest.json">
-  <link rel="apple-touch-icon" href="./192.png">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+
   <style>
     :root{ --ink:#0f172a; --panel:#ffffffcc; --shadow:0 10px 24px rgba(0,0,0,.08); --bg:#f7fbff; --ok:#16a34a; --warn:#f59e0b; --bad:#ef4444; }
     *{box-sizing:border-box} html,body{height:100%}
@@ -669,11 +670,14 @@
 
 <!-- PWA: register SW -->
 <script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW failed:', err));
-    });
-  }
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js')
+      .then(() => console.log('✅ Service Worker registered'))
+      .catch(err => console.warn('SW register failed:', err));
+  });
+}
 </script>
+
 </body>
 </html>
