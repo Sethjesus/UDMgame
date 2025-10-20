@@ -458,7 +458,7 @@
   let vol=(+localStorage.getItem('esg.vol')||60)/100;
   let musicBus=actx?actx.createGain():null; if(musicBus&&actx){ musicBus.gain.value=vol; musicBus.connect(actx.destination); }
   let seqTimer=null, seqBeat=.5, seqStep=0;
-  function fadeTo(target=vol,secs=.5){ if(!actx||!musicBus) return; const now=actx.currentTime; try{musicBus.gain.cancelScheduledValues(now)}catch(e){} musicBus.gain.setValueAtTime(musicBus.gain.value,now); musicBus.gain.linearRampToValueAtTime(clamp(target,0,1), now+secs); }
+  function fadeTo(target=vol,secs=.5){ if(!actx||!musicBus) return; const now=actx.currentTime; try{musicBus.gain.cancelScheduledValues(now)}catch(e){} musicBus.gain.setValueAtTime(musicBus.gain.value,now); musicBus.gain.linearRampToValueAtTime(Math.max(0,Math.min(1,target)), now+secs); }
   function stopSeq(){ if(seqTimer){clearInterval(seqTimer);seqTimer=null} fadeTo(0,.3) }
   function playTrack(kind){ if(!actx||!musicBus) return; if(kind==='none'){stopSeq();return} const p=music[kind]||music.forest; stopSeq(); seqBeat=60/(p.tempo||110); seqStep=0; seqTimer=setInterval(()=>{ const notes=p.steps[seqStep%p.steps.length]; for(const n of notes){ if(n){ const o=actx.createOscillator(), g=actx.createGain(); o.type=p.type; o.frequency.value=n; g.gain.value=.00001; o.connect(g).connect(musicBus); const t=actx.currentTime; o.start(); g.gain.exponentialRampToValueAtTime(p.vol,t+.01); g.gain.exponentialRampToValueAtTime(.00001,t+seqBeat*.9); o.stop(t+seqBeat);} } seqStep++; }, seqBeat*1000); fadeTo(vol,.4); }
   function applyMusic(bg){ if(musicMode==='none') return stopSeq(); if(musicMode==='auto'){ playTrack(bg==='city'?'city':bg==='ocean'?'ocean':'forest'); } else { playTrack(musicMode); } }
@@ -494,6 +494,51 @@
   function currentGoal(){ return parseInt($('goal').textContent,10)||0; }
   function hitToken(t){ if(!running) return; blip(720,.08); score+=10; combo=Math.min(99,combo+1); $('score').textContent=score; $('combo').textContent=combo+'x'; fill.style.width=Math.min(100,(score/currentGoal())*100)+'%'; t.remove(); if(score>=currentGoal()){ const cfg=LEVELS[LV]; if(cfg.boss && !bossEl){ spawnBoss(); } else { openQuiz(cfg.quiz); } } }
 
+  // =====================
+  // 🌳 圖鑑 + 存檔 模組
+  // =====================
+  const TREEDEX=[
+    {name:'台灣杉',desc:'固碳佳，針葉樹',stage:0,unlocked:true},
+    {name:'烏心石',desc:'樟科，耐陰耐風',stage:0,unlocked:false},
+    {name:'楓香',desc:'秋季紅葉',stage:0,unlocked:false},
+    {name:'樟樹',desc:'常綠行道樹',stage:0,unlocked:false},
+    {name:'相思樹',desc:'固氮造林樹種',stage:0,unlocked:false},
+    {name:'山毛櫸',desc:'高海拔闊葉',stage:0,unlocked:false}
+  ];
+  function loadDex(){
+    try{
+      const raw = localStorage.getItem('esg.dex');
+      if(!raw) return TREEDEX.slice();
+      const saved = JSON.parse(raw);
+      const map = new Map(saved.map(it=>[it.name,it]));
+      return TREEDEX.map(it=>{ const s=map.get(it.name); return s? {...it, ...s} : it; });
+    }catch(e){ return TREEDEX.slice(); }
+  }
+  function saveDex(dex){ localStorage.setItem('esg.dex', JSON.stringify(dex)); }
+  let DEX = loadDex();
+  const stageIcon=['🌱','🌿','🌳'];
+  function plantTree(icon){ planted++; $('trees').textContent=planted; const el=document.createElement('div'); el.className='tree'; el.style.setProperty('--x',(Math.random()*(board.clientWidth-80))+'px'); el.textContent=icon||stageIcon[Math.floor(Math.random()*3)]; board.appendChild(el); setTimeout(()=>el.remove(),4800); }
+  function renderDex(){ const g=$('dexGrid'); g.innerHTML=''; DEX.forEach(t=>{ const n=document.createElement('div'); n.className='node'; const badge=t.unlocked?'<span style="font-size:12px;background:#dcfce7;padding:2px 8px;border-radius:999px">已解鎖</span>':'<span style="font-size:12px;background:#e5e7eb;padding:2px 8px;border-radius:999px">未解鎖</span>'; const stage=stageIcon[Math.max(0,Math.min(2, t.stage||0))]; n.innerHTML='<b>'+t.name+'</b> '+badge+' <span style="font-size:12px;background:#e2e8f0;padding:2px 8px;border-radius:999px">階段：'+stage+'</span><p style="margin:6px 0 0;opacity:.9">'+t.desc+'</p>'+(t.unlocked?'<button class="btn" data-plant="1" data-name="'+t.name+'">種下</button>':''); g.appendChild(n); }); g.querySelectorAll('button[data-plant]').forEach(b=>b.addEventListener('click',()=>{ plantTree(); const name=b.getAttribute('data-name'); const t=DEX.find(x=>x.name===name); if(t){ t.stage=Math.min(2,(t.stage||0)+1); saveDex(DEX); renderDex(); } })); }
+
+  // 🌿 自然解鎖條件
+  function totalCorrect(){ return stats.right||0; }
+  function totalTrees(){ return planted||0; }
+  function bestLV(){ return +(localStorage.getItem('esg.bestLV')||1); }
+  function highScore(){
+    try{ const arr=JSON.parse(localStorage.getItem('esg.lb.v54')||'[]'); return arr.reduce((m,r)=>Math.max(m,r.score||0),0); }
+    catch(e){return 0;}
+  }
+  function checkUnlocks(ctx={clear:false,boss:false}){
+    let changed=false;
+    const ensure=(name)=>{ const t=DEX.find(x=>x.name===name); if(t && !t.unlocked){ t.unlocked=true; changed=true; }}
+    if(bestLV()>=2) ensure('烏心石');
+    if(totalCorrect()>=5) ensure('楓香');
+    if(score>=300 || highScore()>=600) ensure('樟樹');
+    if(ctx.boss===true) ensure('相思樹');
+    if(totalTrees()>=30) ensure('山毛櫸');
+    if(changed){ saveDex(DEX); renderDex(); toast('🌳 新樹種已解鎖！'); }
+  }
+
   // Boss
   function spawnBoss(){ bossHp=120; hpbar.style.display='block'; hpfill.style.width='100%'; bossEl=document.createElement('div'); bossEl.className='boss'; board.appendChild(bossEl); playTrack('boss');
     const tap=function(){ bossHp-=6; blip(180,.07); hpfill.style.width=Math.max(0,bossHp)/120*100+'%'; if(bossHp<=0){ cleanup(true); } };
@@ -501,21 +546,15 @@
     const bossTimer=setInterval(()=>{ if(!bossEl) return; const r=Math.random(); if(r<0.33){ skillShockwave(); } else if(r<0.66){ skillStun(); } else { Math.random()<0.5? skillMissile(): skillDrain(); } }, 2800);
     setTimeout(()=>{ if(bossEl){ cleanup(false,true); } }, 14000);
 
-    function cleanup(kill=false,escape=false){ board.removeEventListener('mousedown',tap); board.removeEventListener('touchstart',tap); clearInterval(bossTimer); if(drainAura&&drainAura.parentNode) drainAura.parentNode.removeChild(drainAura); drainAura=null; if (bossEl) { bossEl.remove(); } bossEl=null; hpbar.style.display='none'; applyMusic(LEVELS[LV].bg); if(kill){ toast('Boss 擊敗！'); openQuiz(LEVELS[LV].quiz); } else if(escape){ timeLeft=Math.max(0,timeLeft-10); toast('Boss 逃走！-10s'); } }
+    function cleanup(kill=false,escape=false){ board.removeEventListener('mousedown',tap); board.removeEventListener('touchstart',tap); clearInterval(bossTimer); if(drainAura&&drainAura.parentNode) drainAura.parentNode.removeChild(drainAura); drainAura=null; if (bossEl) { bossEl.remove(); } bossEl=null; hpbar.style.display='none'; applyMusic(LEVELS[LV].bg); if(kill){ toast('Boss 擊敗！'); checkUnlocks({boss:true}); openQuiz(LEVELS[LV].quiz); } else if(escape){ timeLeft=Math.max(0,timeLeft-10); toast('Boss 逃走！-10s'); } }
     function skillShockwave(){ const sw=document.createElement('div'); sw.className='shockwave'; board.appendChild(sw); setTimeout(()=>sw.remove(),1200); const lose=30; score=Math.max(0,score-lose); $('score').textContent=score; toast('💥 衝擊波 -'+lose+' 分'); }
     function skillStun(){ const old=running; running=false; bossEl.classList.add('aura'); toast('⛔ 暈眩 1.5s'); setTimeout(()=>{ running=old; bossEl.classList.remove('aura'); },1500); }
     function skillMissile(){ let m=document.createElement('div'); m.className='missile'; const w=board.clientWidth, h=board.clientHeight; let x=w/2, y=h*0.56; m.style.left=x+'px'; m.style.top=y+'px'; board.appendChild(m); let t0=Date.now(); let timer=setInterval(()=>{ const target=document.querySelector('.token'); if(!target){ m.remove(); clearInterval(timer); return; } const rectT=target.getBoundingClientRect(); const rectB=board.getBoundingClientRect(); const tx=rectT.left-rectB.left+rectT.width/2; const ty=rectT.top-rectB.top+rectT.height/2; x+= (tx-x)*0.12; y+= (ty-y)*0.12; m.style.left=x+'px'; m.style.top=y+'px'; if(Math.hypot(tx-x,ty-y)<18){ const lose=20; score=Math.max(0,score-lose); $('score').textContent=score; toast('🎯 追蹤飛彈 -'+lose+' 分'); try{target.remove();}catch(e){} clearInterval(timer); m.remove(); } if(Date.now()-t0>3500){ clearInterval(timer); m.remove(); } }, 60); }
     function skillDrain(){ if(drainAura&&drainAura.parentNode) drainAura.parentNode.removeChild(drainAura); drainAura=document.createElement('div'); drainAura.className='drain'; board.appendChild(drainAura); let t=0; const iv=setInterval(()=>{ if(!drainAura||!bossEl){ clearInterval(iv); return; } t++; if(t%4===0){ const lose=5; score=Math.max(0,score-lose); $('score').textContent=score; } },160); setTimeout(()=>{ if(drainAura&&drainAura.parentNode){ drainAura.remove(); drainAura=null; clearInterval(iv); } }, 2200); }
   }
 
-  function gameOver(clear){ running=false; clearInterval(spawnTimer); clearInterval(tickTimer); if(clear){ celebrate(); toast('🎉 破關！'); saveLB(); saveBestLV(LV+2); plantTree('🌱'); setTimeout(()=>nextLevel(),900); } else { toast('時間到，下次再來！'); saveLB(); } }
+  function gameOver(clear){ running=false; clearInterval(spawnTimer); clearInterval(tickTimer); if(clear){ celebrate(); toast('🎉 破關！'); saveLB(); saveBestLV(LV+2); plantTree('🌱'); checkUnlocks({clear:true}); setTimeout(()=>nextLevel(),900); } else { toast('時間到，下次再來！'); saveLB(); } }
   function nextLevel(){ if(LV+1>=LEVELS.length){ toast('🏁 全通關！'); return; } startLevel(LV+1); }
-
-  // 樹 & 圖鑑
-  const TREEDEX=[{name:'台灣杉',desc:'固碳佳，針葉樹',stage:0,unlocked:true},{name:'烏心石',desc:'樟科，耐陰耐風',stage:0,unlocked:false},{name:'楓香',desc:'秋季紅葉',stage:0,unlocked:false},{name:'樟樹',desc:'常綠行道樹',stage:0,unlocked:false},{name:'相思樹',desc:'固氮造林樹種',stage:0,unlocked:false},{name:'山毛櫸',desc:'高海拔闊葉',stage:0,unlocked:false}];
-  const stageIcon=['🌱','🌿','🌳'];
-  function plantTree(icon){ planted++; $('trees').textContent=planted; const el=document.createElement('div'); el.className='tree'; el.style.setProperty('--x',(Math.random()*(board.clientWidth-80))+'px'); el.textContent=icon||stageIcon[Math.floor(Math.random()*3)]; board.appendChild(el); setTimeout(()=>el.remove(),4800); }
-  function renderDex(){ const g=$('dexGrid'); g.innerHTML=''; TREEDEX.forEach(t=>{ const n=document.createElement('div'); n.className='node'; const badge=t.unlocked?'<span style="font-size:12px;background:#dcfce7;padding:2px 8px;border-radius:999px">已解鎖</span>':'<span style="font-size:12px;background:#e5e7eb;padding:2px 8px;border-radius:999px">未解鎖</span>'; const stage=stageIcon[t.stage]; n.innerHTML='<b>'+t.name+'</b> '+badge+' <span style="font-size:12px;background:#e2e8f0;padding:2px 8px;border-radius:999px">階段：'+stage+'</span><p style="margin:6px 0 0;opacity:.9">'+t.desc+'</p>'+(t.unlocked?'<button class="btn" data-plant="1">種下</button>':''); g.appendChild(n); }); g.querySelectorAll('button[data-plant]').forEach(b=>b.addEventListener('click',()=>plantTree())); }
 
   // 成就（示意）
   const ACH=[{id:'combo30',name:'連擊王',desc:'連擊 ≥ 30',check:()=>combo>=30},{id:'planter',name:'種樹達人',desc:'累計種樹 ≥ 50',check:()=>planted>=50}];
@@ -542,7 +581,7 @@
       const L = lines[idx];
       const parts = L.split(',');
       if(parts.length < 4) continue;
-      const cat = parts[0], q = parts[1], aStr = parts[2], iStr = parts[3], why = parts.slice(4).join(','); // 允許 why 內含逗號
+      const cat = parts[0], q = parts[1], aStr = parts[2], iStr = parts[3], why = parts.slice(4).join(',');
       const a=aStr.split('|');
       const i=parseInt(iStr,10);
       if(isNaN(i)) continue;
@@ -562,7 +601,7 @@
   function openQuiz(n){ needCorrect=n; correctThisRound=0; $('quizModal').classList.add('show'); buildTabs(); renderQuiz(); }
   function pickQuestion(){ const bag=[]; for(let i=0;i<QUIZ.length;i++){ const w=weight[QUIZ[i].cat]||1; for(let k=0;k<w;k++) bag.push(i); } return bag[Math.floor(Math.random()*bag.length)]||0; }
   function renderQuiz(){ qIndex=pickQuestion(); const it=QUIZ[qIndex]; const box=$('quizBox'); let opts=''; for(let idx=0; idx<it.a.length; idx++){ const o=it.a[idx]; opts+='<label style="display:block;margin:6px 0"><input type="radio" name="q" value="'+idx+'"> '+o+'</label>'; } box.innerHTML='<div class="node"><b>['+it.cat+'] '+it.q+'</b>'+opts+'<div style="margin-top:8px"><button class="btn" id="submitQ">提交</button></div><div id="qFeedback" style="margin-top:6px;font-weight:900"></div></div>'; $('submitQ').addEventListener('click',checkQ); updateStats(); }
-  function checkQ(){ const it=QUIZ[qIndex]; const sel=document.querySelector('input[name="q"]:checked'); if(!sel) return; if(+sel.value===it.i){ blip(860,.12); $('qFeedback').textContent='✅ 答對了！'+(it.why?(' '+it.why):''); stats.right++; correctThisRound++; plantTree('🌿'); if(correctThisRound>=needCorrect){ $('quizModal').classList.remove('show'); gameOver(true); } } else { blip(200,.12); $('qFeedback').textContent='❌ 再想想～ '+(it.why||''); stats.wrong++; } updateStats(); }
+  function checkQ(){ const it=QUIZ[qIndex]; const sel=document.querySelector('input[name="q"]:checked'); if(!sel) return; if(+sel.value===it.i){ blip(860,.12); $('qFeedback').textContent='✅ 答對了！'+(it.why?(' '+it.why):''); stats.right++; checkUnlocks(); correctThisRound++; plantTree('🌿'); if(correctThisRound>=needCorrect){ $('quizModal').classList.remove('show'); gameOver(true); } } else { blip(200,.12); $('qFeedback').textContent='❌ 再想想～ '+(it.why||''); stats.wrong++; } updateStats(); }
   $('nextQ').addEventListener('click',renderQuiz);
   $('importCsv').addEventListener('click',()=>{ const f=$('csvQ').files&&$('csvQ').files[0]; if(!f) return alert('請先選擇 .csv'); const fr=new FileReader(); fr.onload=e=>csvToQuiz(String((e.target&&e.target.result)||'')); fr.readAsText(f,'utf-8'); });
   $('exportCsv').addEventListener('click',()=>{ const blob=new Blob([quizToCsv()],{type:'text/csv;charset=utf-8'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='quiz_export.csv'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),500); });
@@ -617,7 +656,13 @@
   // Modal 綁定
   $('mapBtn').addEventListener('click',()=>{ renderMap(); $('mapModal').classList.add('show'); });
   $('resetProgress').addEventListener('click',()=>{ localStorage.setItem('esg.bestLV',1); toast('進度已重置'); renderMap(); });
-  $('treeBtn').addEventListener('click',()=>{ renderDex(); $('treeModal').classList.add('show'); });
+  $('treeBtn').addEventListener('click',()=>{ renderDex(); $('treeModal').classList.add('show');
+    // 🌟 暗門：長按圖鑑標題 2 秒 → 全部解鎖 + 升到 stage 2
+    const header = document.querySelector('#treeModal h3');
+    if(header){ let pressTimer=null; const down=()=>{ pressTimer=setTimeout(()=>{ DEX.forEach(t=>{ t.unlocked=true; t.stage=2; }); saveDex(DEX); renderDex(); toast('🔓 已解鎖全部樹種！'); },2000); }; const up=()=>{ clearTimeout(pressTimer); };
+      header.addEventListener('mousedown',down); header.addEventListener('touchstart',down,{passive:true});
+      header.addEventListener('mouseup',up); header.addEventListener('mouseleave',up); header.addEventListener('touchend',up); }
+  });
   $('factsBtn').addEventListener('click',()=>{ renderFacts(); $('factsModal').classList.add('show'); });
   $('achBtn').addEventListener('click',()=>{ renderAch(); $('achModal').classList.add('show'); });
   $('lbBtn').addEventListener('click',()=>{ renderLB(); $('lbModal').classList.add('show'); });
@@ -668,7 +713,13 @@
   }
 
   // 初始化
-  document.addEventListener('DOMContentLoaded',()=>{ renderDex(); renderFacts(); renderMap(); });
+  document.addEventListener('DOMContentLoaded',()=>{ renderDex(); renderFacts(); renderMap();
+    // URL 密技：#unlockAll → 直接全解鎖 & 三階段
+    if(location.hash==='#unlockAll'){
+      DEX.forEach(t=>{ t.unlocked=true; t.stage=2; });
+      saveDex(DEX);
+    }
+  });
 })();
 </script>
 
