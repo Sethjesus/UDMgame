@@ -8,10 +8,11 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
   <title>🐾 JP ESG 碳盤樂 v5.4.3</title>
-  <link rel="icon" type="image/jpeg" sizes="32x32" href="https://raw.githubusercontent.com/Sethjesus/Photo/main/UDM%20New%20Logo.jpg?v=3">
-  <!-- PWA additions -->
+
+  <!-- ✅ PWA -->
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-192.png" />
 
   <style>
     :root{ --ink:#0f172a; --panel:#ffffffcc; --shadow:0 10px 24px rgba(0,0,0,.08); --bg:#f7fbff; --ok:#16a34a; --warn:#f59e0b; --bad:#ef4444; }
@@ -72,11 +73,7 @@
     /* --- Quest Pager --- */
     .pager-wrap{display:flex;flex-direction:column;gap:10px}
     .pager{position:relative;overflow:hidden;border-radius:14px}
-    .pager-track{
-      display:flex;
-      transition:transform .28s ease;
-      will-change: transform;
-    }
+    .pager-track{display:flex;transition:transform .28s ease;will-change: transform;}
     .pager-page{min-width:100%;padding:10px;box-sizing:border-box}
     .pager-nav{display:flex;gap:8px;align-items:center;justify-content:center}
     .pager-dot{width:8px;height:8px;border-radius:50%;background:#e5e7eb}
@@ -118,13 +115,21 @@
 
     #questModal .card { max-height: 86vh; overflow: auto; }
     #questModal { overflow-y: auto; }
+
+    /* 📲 安裝按鈕（內嵌在控制列） */
+    #installBtn {
+      display:none;
+      box-shadow:0 6px 0 #22c55e;
+      background:linear-gradient(180deg,#bbf7d0,#86efac);
+      color:#064e3b;
+    }
   </style>
 </head>
 <body>
 <div class="app">
   <div class="topbar">
     <div class="brand">
-      <img src="https://raw.githubusercontent.com/Sethjesus/Photo/main/UDM%20New%20Logo.jpg?v=3" alt="UDM Logo"/>
+      <img src="icons/icon-192.png" alt="UDM Logo"/>
       <div style="display:flex;flex-direction:column;line-height:1.1">
         <b id="title">碳盤樂 ESG v5.4.3</b>
         <small id="subtitle" style="opacity:.8">UDM｜邊玩邊學</small>
@@ -134,7 +139,7 @@
       <span class="chip">👤 <b id="player">Player</b></span>
       <span class="chip">關卡：<b id="level">1</b>/10</span>
       <span class="chip">難度：
-        <select id="difficulty">
+        <select id="difficulty" aria-label="選擇難度">
           <option value="easy">簡單</option>
           <option value="normal" selected>普通</option>
           <option value="hard">困難</option>
@@ -152,8 +157,9 @@
       <button class="btn" id="musicBtn">🎵 音樂</button>
       <button class="btn primary" id="startBtn">開始</button>
       <button class="btn blue" id="pauseBtn">暫停</button>
-      <button class="btn" id="langBtn" aria-pressed="false">🌐 EN</button>
       <button class="btn" id="soundBtn" aria-pressed="false">🔈</button>
+      <!-- 📲 PWA 下載 -->
+      <button class="btn" id="installBtn">📲 下載</button>
     </div>
   </div>
 
@@ -194,158 +200,159 @@
 </div></div>
 
 <!-- 任務中心（Pager 5 頁） -->
-<div class="modal" id="questModal"><div class="card">
-  <h3>📅 任務中心</h3>
+<div class="modal" id="questModal">
+  <div class="card">
+    <h3>📅 任務中心</h3>
 
-  <div class="pager-wrap">
-    <div class="pager" id="questPager">
-      <div class="pager-track" id="questTrack">
-        <!-- 0：每日 -->
-        <section class="pager-page">
-          <div class="grid">
-            <div class="node">
-              <b>🎯 每日任務</b>
-              <ul id="dailyList" class="todo-list"></ul>
+    <div class="pager-wrap">
+      <div class="pager" id="questPager">
+        <div class="pager-track" id="questTrack">
+          <!-- 0：每日 -->
+          <section class="pager-page">
+            <div class="grid">
+              <div class="node">
+                <b>🎯 每日任務</b>
+                <ul id="dailyList" class="todo-list"></ul>
+              </div>
             </div>
-          </div>
-        </section>
-        <!-- 1：每週 -->
-        <section class="pager-page">
-          <div class="grid">
-            <div class="node">
-              <b>📆 每週任務</b>
-              <ul id="weeklyList" class="todo-list"></ul>
+          </section>
+          <!-- 1：每週 -->
+          <section class="pager-page">
+            <div class="grid">
+              <div class="node">
+                <b>📆 每週任務</b>
+                <ul id="weeklyList" class="todo-list"></ul>
+              </div>
             </div>
-          </div>
-        </section>
-        <!-- 2：清單（S1/S2/S3） -->
-        <section class="pager-page">
-          <div class="grid">
-            <div class="node">
-              <b>📑 碳盤查任務流（S1 / S2 / S3）</b>
-              <table class="table" style="width:100%;border-collapse:separate;border-spacing:0 6px">
-                <tbody id="ghgBody"></tbody>
-              </table>
-            </div>
-          </div>
-        </section>
-        <!-- 3：GHG / ISO 14064-1 對照表（表格） -->
-        <section class="pager-page">
-          <div class="grid">
-            <div class="node">
-              <b>🧾 GHG / ISO 14064-1 對照表</b>
-              <div class="node" style="overflow:auto">
-                <table class="ghg-table">
-                  <thead>
-                    <tr><th>環保署規範範疇</th><th>GHG Protocol</th><th>ISO 14064-1:2018</th></tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td><b>盤查溫室氣體</b></td>
-                      <td>京都議定書涵蓋 CO₂、CH₄、N₂O、SF₆、HFCs、PFCs 等 6 類氣體；其他氣體另行揭露。</td>
-                      <td>常用清單含 CO₂、CH₄、N₂O、NF₃、SF₆、HFCs、PFCs 等。</td>
-                    </tr>
-                    <tr>
-                      <td><b>直接排放</b></td>
-                      <td>範疇 1：直接溫室氣體排放</td>
-                      <td>類別 1：直接溫室氣體排放與移除</td>
-                    </tr>
-                    <tr>
-                      <td><b>能源間接排放</b></td>
-                      <td>範疇 2：電力之間接溫室氣體排放</td>
-                      <td>類別 2：進口能源的間接溫室氣體排放</td>
-                    </tr>
-                    <tr>
-                      <td><b>其他間接排放</b></td>
-                      <td>範疇 3：其他間接排放（15 類：採購、資本財、燃料與能源上游、運輸與配送、廢棄物、商旅、通勤、上游租賃、下游運輸配送、產品加工、產品使用、期末處置、下游租賃、加盟、投資）</td>
-                      <td>類別 3–6：運輸、產品使用、範圍外間接排放（投資/特許/租賃/加盟）與其他來源間接排放</td>
-                    </tr>
-                  </tbody>
+          </section>
+          <!-- 2：清單（S1/S2/S3） -->
+          <section class="pager-page">
+            <div class="grid">
+              <div class="node">
+                <b>📑 碳盤查任務流（S1 / S2 / S3）</b>
+                <table class="table" style="width:100%;border-collapse:separate;border-spacing:0 6px">
+                  <tbody id="ghgBody"></tbody>
                 </table>
               </div>
             </div>
-          </div>
-        </section>
-        <!-- 4：盤查定義與應用延伸 -->
-        <section class="pager-page">
-          <div class="grid">
-            <div class="node">
-              <b>📘 盤查定義與應用延伸</b>
-              <div class="node" style="overflow:auto;margin-top:8px">
-                <b>🧭 組織邊界（Boundary Definition）</b>
-                <table class="ghg-table">
-                  <thead><tr><th>項目</th><th>說明</th></tr></thead>
-                  <tbody>
-                    <tr><td>股權法 (Equity Share)</td><td>依企業在被投資單位之持股比例計算排放量。</td></tr>
-                    <tr><td>財務控制 (Financial Control)</td><td>企業具有財務決策權（預算/資本配置等）者，納入盤查邊界。</td></tr>
-                    <tr><td>營運控制 (Operational Control)</td><td>企業能主導日常營運與政策者，應納入盤查。</td></tr>
-                  </tbody>
-                </table>
-              </div>
-              <div class="node" style="overflow:auto;margin-top:8px">
-                <b>🧩 營運控制法應用</b>
-                <table class="ghg-table">
-                  <thead><tr><th>分類</th><th>範例</th><th>是否納入盤查</th></tr></thead>
-                  <tbody>
-                    <tr><td>公司自有廠房與設備</td><td>自營生產線、辦公室</td><td>✅ 是</td></tr>
-                    <tr><td>委外加工廠</td><td>無日常管理權</td><td>❌ 否（可列入 S3）</td></tr>
-                    <tr><td>合資企業</td><td>持股但無營運控制權</td><td>➖ 依股權法按比例列入</td></tr>
-                    <tr><td>委外物流或租賃</td><td>由第三方運作</td><td>✅ 若由企業指揮運作則納入</td></tr>
-                  </tbody>
-                </table>
-              </div>
-              <div class="node" style="overflow:auto;margin-top:8px">
-                <b>🔄 碳盤查流程（Carbon Inventory Flow）</b>
-                <table class="ghg-table">
-                  <thead><tr><th>步驟</th><th>說明</th></tr></thead>
-                  <tbody>
-                    <tr><td>1. 界定組織與營運邊界</td><td>確認盤查對象範圍（含子公司、工廠、辦公室）。</td></tr>
-                    <tr><td>2. 辨識排放源</td><td>盤點能源、燃料、設備、運輸、廢棄物等來源。</td></tr>
-                    <tr><td>3. 蒐集活動數據</td><td>燃料量、電表度數、里程、噸公里、重量等。</td></tr>
-                    <tr><td>4. 套用排放係數</td><td>選用政府或國際指南（IPCC、EPA、DEFRA、在地電力係數）。</td></tr>
-                    <tr><td>5. 計算排放量</td><td>活動數據 × 排放係數（必要時乘以 GWP）。</td></tr>
-                    <tr><td>6. 審查與查驗</td><td>內部或第三方審查資料來源、邊界與計算邏輯。</td></tr>
-                    <tr><td>7. 揭露與改善</td><td>年度報告揭露並設定減碳目標與行動。</td></tr>
-                    <tr><td>16+4聯繫電話窗口</td><td>溫經理: 02-3224-7916。</td></tr>
-                  </tbody>
-                </table>
-              </div>
-              <div class="node" style="margin-top:8px">
-                <div class="node">
-                  📍 <a href="https://www.idipckeelung.org.tw/%E3%80%90%E8%A3%9C%E5%8A%A9%E8%B3%87%E8%A8%8A%E3%80%91%E5%9B%A0%E6%87%89%E4%B8%AD%E5%B0%8F%E4%BC%81%E6%A5%AD%E9%9C%80%E6%B1%82%EF%BC%8C%E7%94%B3%E8%AB%8B%E6%97%A5%E6%9C%9F%E6%8B%89%E9%95%B7%E8%87%B312/"
-                    target="_blank" rel="noopener"><b>👉 點我前往申請 16+4 碳盤查補助計畫</b></a>
+          </section>
+          <!-- 3：GHG / ISO 14064-1 對照表（表格） -->
+          <section class="pager-page">
+            <div class="grid">
+              <div class="node">
+                <b>🧾 GHG / ISO 14064-1 對照表</b>
+                <div class="node" style="overflow:auto">
+                  <table class="ghg-table">
+                    <thead>
+                      <tr><th>環保署規範範疇</th><th>GHG Protocol</th><th>ISO 14064-1:2018</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td><b>盤查溫室氣體</b></td>
+                        <td>京都議定書涵蓋 CO₂、CH₄、N₂O、SF₆、HFCs、PFCs 等 6 類氣體；其他氣體另行揭露。</td>
+                        <td>常用清單含 CO₂、CH₄、N₂O、NF₃、SF₆、HFCs、PFCs 等。</td>
+                      </tr>
+                      <tr>
+                        <td><b>直接排放</b></td>
+                        <td>範疇 1：直接溫室氣體排放</td>
+                        <td>類別 1：直接溫室氣體排放與移除</td>
+                      </tr>
+                      <tr>
+                        <td><b>能源間接排放</b></td>
+                        <td>範疇 2：電力之間接溫室氣體排放</td>
+                        <td>類別 2：進口能源的間接溫室氣體排放</td>
+                      </tr>
+                      <tr>
+                        <td><b>其他間接排放</b></td>
+                        <td>範疇 3：其他間接排放（15 類：採購、資本財、燃料與能源上游、運輸與配送、廢棄物、商旅、通勤、上游租賃、下游運輸配送、產品加工、產品使用、期末處置、下游租賃、加盟、投資）</td>
+                        <td>類別 3–6：運輸、產品使用、範圍外間接排放（投資/特許/租賃/加盟）與其他來源間接排放</td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
               </div>
-              <div class="node" style="overflow:auto;margin-top:8px">
-                <b>⚙️ 排放係數範例（示意）</b>
-                <table class="ghg-table">
-                  <thead><tr><th>類別</th><th>單位</th><th>參考係數（kgCO₂e）</th><th>常見來源</th></tr></thead>
-                  <tbody>
-                    <tr><td>電力（台灣地區）</td><td>kWh</td><td>0.495</td><td>環保署/能源局公布之年度係數</td></tr>
-                    <tr><td>汽油</td><td>L</td><td>2.27</td><td>IPCC 2006</td></tr>
-                    <tr><td>柴油</td><td>L</td><td>2.68</td><td>IPCC 2006</td></tr>
-                    <tr><td>天然氣</td><td>Nm³</td><td>2.05</td><td>能源局因子</td></tr>
-                    <tr><td>員工通勤（小客車）</td><td>km</td><td>0.21</td><td>DEFRA 2023</td></tr>
-                    <tr><td>廢棄物掩埋</td><td>kg</td><td>0.45</td><td>EPA WARM</td></tr>
-                  </tbody>
-                </table>
+            </div>
+          </section>
+          <!-- 4：盤查定義與應用延伸 -->
+          <section class="pager-page">
+            <div class="grid">
+              <div class="node">
+                <b>📘 盤查定義與應用延伸</b>
+                <div class="node" style="overflow:auto;margin-top:8px">
+                  <b>🧭 組織邊界（Boundary Definition）</b>
+                  <table class="ghg-table">
+                    <thead><tr><th>項目</th><th>說明</th></tr></thead>
+                    <tbody>
+                      <tr><td>股權法 (Equity Share)</td><td>依企業在被投資單位之持股比例計算排放量。</td></tr>
+                      <tr><td>財務控制 (Financial Control)</td><td>企業具有財務決策權（預算/資本配置等）者，納入盤查邊界。</td></tr>
+                      <tr><td>營運控制 (Operational Control)</td><td>企業能主導日常營運與政策者，應納入盤查。</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div class="node" style="overflow:auto;margin-top:8px">
+                  <b>🧩 營運控制法應用</b>
+                  <table class="ghg-table">
+                    <thead><tr><th>分類</th><th>範例</th><th>是否納入盤查</th></tr></thead>
+                    <tbody>
+                      <tr><td>公司自有廠房與設備</td><td>自營生產線、辦公室</td><td>✅ 是</td></tr>
+                      <tr><td>委外加工廠</td><td>無日常管理權</td><td>❌ 否（可列入 S3）</td></tr>
+                      <tr><td>合資企業</td><td>持股但無營運控制權</td><td>➖ 依股權法按比例列入</td></tr>
+                      <tr><td>委外物流或租賃</td><td>由第三方運作</td><td>✅ 若由企業指揮運作則納入</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div class="node" style="overflow:auto;margin-top:8px">
+                  <b>🔄 碳盤查流程（Carbon Inventory Flow）</b>
+                  <table class="ghg-table">
+                    <thead><tr><th>步驟</th><th>說明</th></tr></thead>
+                    <tbody>
+                      <tr><td>1. 界定組織與營運邊界</td><td>確認盤查對象範圍（含子公司、工廠、辦公室）。</td></tr>
+                      <tr><td>2. 辨識排放源</td><td>盤點能源、燃料、設備、運輸、廢棄物等來源。</td></tr>
+                      <tr><td>3. 蒐集活動數據</td><td>燃料量、電表度數、里程、噸公里、重量等。</td></tr>
+                      <tr><td>4. 套用排放係數</td><td>選用政府或國際指南（IPCC、EPA、DEFRA、在地電力係數）。</td></tr>
+                      <tr><td>5. 計算排放量</td><td>活動數據 × 排放係數（必要時乘以 GWP）。</td></tr>
+                      <tr><td>6. 審查與查驗</td><td>內部或第三方審查資料來源、邊界與計算邏輯。</td></tr>
+                      <tr><td>7. 揭露與改善</td><td>年度報告揭露並設定減碳目標與行動。</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div class="node" style="margin-top:8px">
+                  <div class="node">
+                    📍 <a href="https://www.idipckeelung.org.tw/%E3%80%90%E8%A3%9C%E5%8A%A9%E8%B3%87%E8%A8%8A%E3%80%91%E5%9B%A0%E6%87%89%E4%B8%AD%E5%B0%8F%E4%BC%81%E6%A5%AD%E9%9C%80%E6%B1%82%EF%BC%8C%E7%94%B3%E8%AB%8B%E6%97%A5%E6%9C%9F%E6%8B%89%E9%95%B7%E8%87%B312/"
+                    target="_blank" rel="noopener"><b>👉 點我前往申請 16+4 碳盤查補助計畫</b></a>
+                  </div>
+                </div>
+                <div class="node" style="overflow:auto;margin-top:8px">
+                  <b>⚙️ 排放係數範例（示意）</b>
+                  <table class="ghg-table">
+                    <thead><tr><th>類別</th><th>單位</th><th>參考係數（kgCO₂e）</th><th>常見來源</th></tr></thead>
+                    <tbody>
+                      <tr><td>電力（台灣地區）</td><td>kWh</td><td>0.495</td><td>環保署/能源局公布之年度係數</td></tr>
+                      <tr><td>汽油</td><td>L</td><td>2.27</td><td>IPCC 2006</td></tr>
+                      <tr><td>柴油</td><td>L</td><td>2.68</td><td>IPCC 2006</td></tr>
+                      <tr><td>天然氣</td><td>Nm³</td><td>2.05</td><td>能源局因子</td></tr>
+                      <tr><td>員工通勤（小客車）</td><td>km</td><td>0.21</td><td>DEFRA 2023</td></tr>
+                      <tr><td>廢棄物掩埋</td><td>kg</td><td>0.45</td><td>EPA WARM</td></tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
-          </div>
-        </section>
+          </section>
+        </div>
+      </div>
+      <div class="pager-nav">
+        <button class="pager-btn" id="questPrev">◀</button>
+        <span id="questDots" style="display:flex;gap:6px"></span>
+        <button class="pager-btn" id="questNext">▶</button>
       </div>
     </div>
-    <div class="pager-nav">
-      <button class="pager-btn" id="questPrev">◀</button>
-      <span id="questDots" style="display:flex;gap:6px"></span>
-      <button class="pager-btn" id="questNext">▶</button>
+
+    <div style="text-align:right;margin-top:8px">
+      <button class="btn" data-close="questModal">關閉</button>
     </div>
   </div>
-
-  <div style="text-align:right;margin-top:8px">
-    <button class="btn" data-close="questModal">關閉</button>
-  </div>
-</div></div>
+</div>
 
 <!-- 問答 -->
 <div class="modal" id="quizModal"><div class="card">
@@ -431,10 +438,6 @@
   function toast(msg){ const t=document.createElement('div'); t.className='toast show'; t.textContent=msg; board.appendChild(t); setTimeout(()=>t.remove(),1200); }
   function celebrate(){ for(let i=0;i<80;i++){ const c=document.createElement('div'); c.className='confetti'; c.style.left=(Math.random()*100)+'%'; c.style.background='hsl('+(Math.random()*360)+',90%,60%)'; c.style.animationDuration=(1.2+Math.random()*1.4)+'s'; document.body.appendChild(c); setTimeout(()=>c.remove(),2200);} }
 
-  // 語系
-  let LANG=localStorage.getItem('esg.lang')||'zh';
-  function applyLang(){ const zh=(LANG==='zh'); $('langBtn').textContent=zh?'🌐 EN':'🌐 中文'; $('treesLabel').textContent=zh?'已種樹：':'Trees:'; }
-
   // 玩家
   let playerName=localStorage.getItem('esg.player')||'Player'; $('player').textContent=playerName;
 
@@ -478,7 +481,7 @@
   function saveBestLV(lv){ const best=+(localStorage.getItem('esg.bestLV')||1); if(lv>best){ localStorage.setItem('esg.bestLV', lv); }}
 
   const board=$('board'), fill=$('goalFill'), hpbar=$('hpbar'), hpfill=$('hpfill');
-  let score=0, combo=0, timeLeft=60, running=false, planted=0, spawnTimer=null, tickTimer=null, bossEl=null, bossHp=0, bossTimer=null, drainAura=null;
+  let score=0, combo=0, timeLeft=60, running=false, planted=0, spawnTimer=null, tickTimer=null, bossEl=null, bossHp=0, drainAura=null;
   const EMOJIS=['🍀','🌿','🌳','💧','⚡','🌎'];
 
   function startLevel(i){ LV=i; const cfg=LEVELS[LV]||LEVELS[0]; const d=DIFF[diff]||DIFF.normal;
@@ -606,7 +609,8 @@
   function ensureName(){ if(!localStorage.getItem('esg.player')){ $('nameModal').classList.add('show'); } }
   $('saveName').addEventListener('click',()=>{ const v=$('nameInput').value.trim()||'Player'; localStorage.setItem('esg.player',v); $('player').textContent=v; $('nameModal').classList.remove('show'); });
   $('soundBtn').addEventListener('click',()=>{ soundOn=!soundOn; $('soundBtn').textContent=soundOn?'🔊':'🔈'; if(soundOn) blip(640,.1) });
-  $('langBtn').addEventListener('click',()=>{ LANG=(LANG==='zh'?'en':'zh'); localStorage.setItem('esg.lang',LANG); applyLang(); });
+
+  // 開始/暫停
   $('startBtn').addEventListener('click',()=>{ ensureName(); planted=0; $('trees').textContent=0; startLevel(0); });
   $('pauseBtn').addEventListener('click',()=>{ running=false; clearInterval(spawnTimer); clearInterval(tickTimer); toast('已暫停'); });
 
@@ -664,19 +668,68 @@
   }
 
   // 初始化
-  document.addEventListener('DOMContentLoaded',()=>{ applyLang(); renderDex(); renderFacts(); renderMap(); });
+  document.addEventListener('DOMContentLoaded',()=>{ renderDex(); renderFacts(); renderMap(); });
 })();
 </script>
 
-<!-- PWA: register SW -->
+<!-- ✅ PWA: register SW（只在 http/https 下啟用，避免 file:// 錯誤） -->
 <script>
-if ('serviceWorker' in navigator) {
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('sw.js')
       .then(() => console.log('✅ Service Worker registered'))
       .catch(err => console.warn('SW register failed:', err));
   });
+} else {
+  console.warn('SW disabled on non-http(s) origin.');
 }
+</script>
+
+<!-- 📲 PWA 安裝邏輯（顯示「📲 下載」按鈕） -->
+<script>
+(function(){
+  const btn = document.getElementById('installBtn');
+  let deferredPrompt = null;
+
+  const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isStandalone = () =>
+    window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
+  if (isStandalone()) {
+    if (btn) btn.style.display = 'none';
+    return;
+  }
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    if (btn) btn.style.display = 'inline-block';
+  });
+
+  if (isIOS() && btn) {
+    btn.style.display = 'inline-block';
+  }
+
+  btn && btn.addEventListener('click', async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const r = await deferredPrompt.userChoice;
+      console.log('PWA install:', r.outcome);
+      deferredPrompt = null;
+      btn.style.display = 'none';
+    } else if (isIOS()) {
+      alert('📱 iOS：請在 Safari → 共享 → 加到主畫面');
+    } else {
+      alert('請在瀏覽器選單選擇「安裝應用程式」或「加到主畫面」。');
+    }
+  });
+
+  window.addEventListener('appinstalled', () => {
+    console.log('✅ PWA installed');
+    if (btn) btn.style.display = 'none';
+    alert('安裝完成！從主畫面開啟更順暢 🌿');
+  });
+})();
 </script>
 
 </body>
