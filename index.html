@@ -10,9 +10,11 @@
   <title>🐾 JP ESG 碳盤樂 v5.4.4（CSV 合併/覆蓋＋Top-Right Toast）</title>
 
   <!-- ✅ PWA -->
-  <link rel="manifest" href="manifest.json">
-  <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-192.png" />
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png" />
+<link rel="icon" type="image/png" sizes="512x512" href="./icons/icon-512.png" />
+
 
   <style>
     :root{ --ink:#0f172a; --panel:#ffffffcc; --shadow:0 10px 24px rgba(0,0,0,.08); --bg:#f7fbff; --ok:#16a34a; --warn:#f59e0b; --bad:#ef4444; }
@@ -967,17 +969,23 @@ const toastError   = (m,ms=3600)=> toast(m,{type:'error',duration:ms});
 </script>
 
 <!-- ✅ PWA: register SW -->
+<!-- ✅ SW register: 支援 GitHub Pages 子路徑 -->
 <script>
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js')
-      .then(() => console.log('✅ Service Worker registered'))
+    // basePath 例如：/UDMgame/
+    const parts = location.pathname.split('/').filter(Boolean);
+    const basePath = parts.length ? `/${parts[0]}/` : '/';
+    const swUrl = `${basePath}sw.js`;
+    navigator.serviceWorker.register(swUrl, { scope: basePath })
+      .then(() => console.log('✅ Service Worker registered at', swUrl))
       .catch(err => console.warn('SW register failed:', err));
   });
 } else {
   console.warn('SW disabled on non-http(s) origin.');
 }
 </script>
+
 
 <!-- 📲 PWA 安裝邏輯 -->
 <script>
