@@ -7,14 +7,13 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>🐾 JP ESG 碳盤樂 v5.4.4（CSV 合併/覆蓋＋Top-Right Toast）</title>
+  <title>🐾 JP ESG 碳盤樂 v5.4.8（CSV 合併/覆蓋＋Top-Right Toast＋PWA＋Reset）</title>
 
   <!-- ✅ PWA -->
-<link rel="manifest" href="./manifest.json">
-<link rel="apple-touch-icon" href="./icons/icon-192.png">
-<link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png" />
-<link rel="icon" type="image/png" sizes="512x512" href="./icons/icon-512.png" />
-
+  <link rel="manifest" href="./manifest.json">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png" />
+  <link rel="icon" type="image/png" sizes="512x512" href="./icons/icon-512.png" />
 
   <style>
     :root{ --ink:#0f172a; --panel:#ffffffcc; --shadow:0 10px 24px rgba(0,0,0,.08); --bg:#f7fbff; --ok:#16a34a; --warn:#f59e0b; --bad:#ef4444; }
@@ -32,6 +31,7 @@
     .btn:active{transform:translateY(3px);box-shadow:0 2px 0 rgba(0,0,0,.25)}
     .btn.primary{background:linear-gradient(180deg,#bef264,#86efac);color:#064e3b;box-shadow:0 6px 0 #22c55e}
     .btn.blue{background:linear-gradient(180deg,#bae6fd,#93c5fd);color:#08324a;box-shadow:0 6px 0 #60a5fa}
+    .btn.danger{background:linear-gradient(180deg,#fecaca,#fca5a5);color:#7f1d1d;box-shadow:0 6px 0 #ef4444}
     .arena{margin-top:12px}
     .board{position:relative;height:min(64vh,620px);min-height:500px;width:100%;border-radius:22px;overflow:hidden;outline:6px solid #fff;border:3px dashed #bbf7d0;box-shadow:var(--shadow)}
     .bg-forest{background:linear-gradient(180deg,#ecfdf5,#e0ffe9)}
@@ -83,7 +83,7 @@
     .pager-dot.active{background:#16a34a}
     .pager-btn{border:none;border-radius:10px;padding:6px 10px;background:#fff;box-shadow:0 4px 0 #e5e7eb;cursor:pointer}
 
-    /* ✅ 全橫列版任務樣式（橫向捲動） */
+    /* ✅ 任務清單 */
     .todo-list{list-style:none;padding:0;margin:8px 0;display:flex;flex-wrap:nowrap;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory}
     .todo-list::-webkit-scrollbar{height:8px}
     .todo-list::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:999px}
@@ -94,28 +94,22 @@
     .todo-bar{height:6px;border-radius:6px;background:#f1f5f9;overflow:hidden;margin-top:4px}
     .todo-fill{height:100%;width:0;background:linear-gradient(90deg,#86efac,#60a5fa)}
 
-    /* ✅ GHG 14064 對照擴充表格 */
+    /* ✅ GHG 14064 對照表 */
     .ghg-table{width:100%;border-collapse:collapse;margin-top:12px;min-width:820px}
     .ghg-table th,.ghg-table td{border:1px solid #d1d5db;padding:6px 10px;text-align:left;vertical-align:top}
     .ghg-table th{background:#f3f4f6}
     .ghg-table caption{caption-side:top;font-weight:700;margin-bottom:8px}
 
-    @media (max-width:680px){ .controls{gap:6px} .chip{padding:6px 10px} .token{width:74px;height:74px} }
-
-    /* ===== Quest 版面一致化修正 ===== */
+    /* ✅ Quest 版面一致化修正（Modal） */
     #questModal .pager-page { padding: 0; }
     #questModal .pager-page > .grid { margin: 0; display:block; }
     #questModal .pager-page > .grid > .node { width: 100%; }
-
     #questModal .node .node { padding: 0; border: none; box-shadow: none; }
-
     #questModal .todo-list { padding: 0 8px; margin: 8px 0; }
     #questModal .todo-list li { flex: 0 0 280px; }
     #questModal .todo-top { margin-bottom: 6px; }
-
     #questModal .ghg-table { min-width: 960px; width: 100%; }
     #questModal .node[style*="overflow:auto"] { max-width: 100%; }
-
     #questModal .card { max-height: 86vh; overflow: auto; }
     #questModal { overflow-y: auto; }
 
@@ -134,6 +128,8 @@
     }
     .mode-pill.merge{background:linear-gradient(180deg,#e2fbe8,#bcf0da); color:#065f46;}
     .mode-pill.over{background:linear-gradient(180deg,#fee2e2,#fecaca); color:#7f1d1d;}
+
+    @media (max-width:680px){ .controls{gap:6px} .chip{padding:6px 10px} .token{width:74px;height:74px} }
   </style>
 </head>
 <body>
@@ -142,7 +138,7 @@
     <div class="brand">
       <img src="https://github.com/Sethjesus/Photo/blob/main/UDM%20New%20Logo.jpg?raw=true" alt="UDM Logo"/>
       <div style="display:flex;flex-direction:column;line-height:1.1">
-        <b id="title">碳盤樂 ESG v5.4.4</b>
+        <b id="title">碳盤樂 ESG v5.4.8</b>
         <small id="subtitle" style="opacity:.8">UDM｜邊玩邊學</small>
       </div>
     </div>
@@ -170,10 +166,10 @@
       <button class="btn primary" id="startBtn">開始</button>
       <button class="btn blue" id="pauseBtn">暫停</button>
       <button class="btn" id="soundBtn" aria-pressed="false">🔈</button>
-      <button class="btn" id="resetAllBtn">♻️ 重置紀錄</button>
-
       <!-- 📲 PWA 下載 -->
       <button class="btn" id="installBtn">📲 下載</button>
+      <!-- ♻️ 重置 -->
+      <button class="btn danger" id="resetAllBtn" title="清除紀錄＋快取＋SW 並重新載入">♻️ 重置</button>
     </div>
   </div>
 
@@ -191,6 +187,8 @@
     <div class="hint" id="versionNote"></div>
   </div>
 </div>
+
+<!-- ========== Modals ========== -->
 
 <!-- 取名 -->
 <div class="modal" id="nameModal"><div class="card">
@@ -256,7 +254,7 @@
               </div>
             </div>
           </section>
-          <!-- 3：GHG / ISO 14064-1 對照表（表格） -->
+          <!-- 3：GHG / ISO 14064-1 對照表 -->
           <section class="pager-page">
             <div class="grid">
               <div class="node">
@@ -292,7 +290,8 @@
                 </div>
               </div>
             </div>
-          </section><!-- 4：盤查定義與應用延伸 -->
+          </section>
+          <!-- 4：盤查定義與應用延伸 -->
           <section class="pager-page">
             <div class="grid">
               <div class="node">
@@ -459,10 +458,8 @@
   </div>
 </div></div>
 
+<!-- ===================== Toast（右上角） ===================== -->
 <script>
-/* ===========================
-   🌈 右上角浮動 Toast 系統
-   =========================== */
 (function initToastStyles(){
   if (document.getElementById('toastStyles')) return;
   const css = `
@@ -489,7 +486,6 @@
     display:block; height:100%; width:100%;
     transform-origin:left center; animation:toastBar linear forwards;
   }
-  /* 類型顏色 */
   .toast-success{ border:1px solid rgba(34,197,94,.45); }
   .toast-success .toast-bar > i{ background:linear-gradient(90deg,#86efac,#22c55e); }
   .toast-info{ border:1px solid rgba(59,130,246,.45); }
@@ -507,7 +503,6 @@
   el.textContent = css;
   document.head.appendChild(el);
 })();
-
 function toast(msg, opts){
   if (typeof opts === 'number') opts = { duration: opts };
   opts = Object.assign({ type:'info', duration:3000, showProgress:true, icon:null, html:true }, opts||{});
@@ -534,11 +529,11 @@ const toastWarn    = (m,ms=3200)=> toast(m,{type:'warn',duration:ms});
 const toastError   = (m,ms=3600)=> toast(m,{type:'error',duration:ms});
 </script>
 
+<!-- ===================== 主遊戲邏輯 ===================== -->
 <script>
 (function(){
   const $=id=>document.getElementById(id);
   const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
-  function centerToast(msg){ toast(msg,{type:'info'}); } // 相容舊呼叫
 
   // 玩家
   function loadName(){ return localStorage.getItem('esg.player')||'Player'; }
@@ -613,78 +608,6 @@ const toastError   = (m,ms=3600)=> toast(m,{type:'error',duration:ms});
       playTrack(musicMode);
     }
   }
-  // ===== 全部重置（保留玩家名稱/偏好） =====
-function resetProgressRecords(opts={ keepPrefs:true, keepName:true }){
-  // 要清除的 key（進度/資料）
-  const keys = ['esg.bestLV','esg.dex','esg.ach','esg.lb.v54'];
-
-  // 這些是「以日期為前綴」的動態 key（每日/每週任務、今日已出題）
-  const prefixes = ['esg.daily.','esg.weekly.','esg.asked.'];
-
-  // 若也想清偏好或名稱，就把它們也放進 keys
-  if (!opts.keepPrefs){
-    keys.push('esg.music','esg.vol','esg.diff','esg.importMode');
-  }
-  if (!opts.keepName){
-    keys.push('esg.player');
-  }
-
-  // 先把所有 localStorage key 抓出來，避免迴圈刪除時 length 變動
-  const allKeys = [];
-  for (let i=0; i<localStorage.length; i++){
-    allKeys.push(localStorage.key(i));
-  }
-
-  // 清除前綴類
-  for (const k of allKeys){
-    if (prefixes.some(p => k.startsWith(p))){
-      try { localStorage.removeItem(k); } catch(e){}
-    }
-  }
-
-  // 清除指定 keys
-  for (const k of keys){
-    try { localStorage.removeItem(k); } catch(e){}
-  }
-
-  // ===== 重置執行期狀態 & 重新渲染 =====
-  planted = 0; score = 0; combo = 0;
-  $('trees').textContent = 0;
-  $('score').textContent = 0;
-  $('combo').textContent = '0x';
-  fill.style.width = '0%';
-  hpbar.style.display = 'none';
-
-  // 還原圖鑑到預設、刷新 UI
-  DEX = loadDex();         // 會自動回到 baseDex()
-  renderDex();
-  renderLB();
-  renderMap();
-  updateStats();
-
-  toastSuccess('✅ 已重置遊戲紀錄（保留名稱與偏好）');
-}
-
-// 綁定按鈕
-$('resetAllBtn')?.addEventListener('click', ()=>{
-  if (confirm('確定要重置紀錄嗎？\n（會清除關卡進度、圖鑑、成就、排行榜、每日/每週任務、今日抽題紀錄；保留名稱/難度/音樂偏好）')){
-    resetProgressRecords({ keepPrefs:true, keepName:true });
-  }
-});
-
-/* 進階：長按 2 秒做「完全重置」（連名稱/偏好也清）
-$('resetAllBtn')?.addEventListener('mousedown', ()=>{
-  this._t = setTimeout(()=>{
-    if (confirm('⚠️ 完全重置：連名稱與偏好也清除。要繼續嗎？')){
-      resetProgressRecords({ keepPrefs:false, keepName:false });
-      toastWarn('已完全重置，請重新設定名稱與偏好');
-    }
-  }, 2000);
-});
-$('resetAllBtn')?.addEventListener('mouseup', ()=> clearTimeout(this._t));
-$('resetAllBtn')?.addEventListener('mouseleave', ()=> clearTimeout(this._t));
-*/
-
 
   // 關卡配置
   const LEVELS=[
@@ -700,11 +623,11 @@ $('resetAllBtn')?.addEventListener('mouseleave', ()=> clearTimeout(this._t));
     {goal:1120,time:38,spawn:440,quiz:4,bg:'forest',illus:'🦅',boss:true}
   ];
   let LV=0; function setBg(kind){ board.classList.remove('bg-forest','bg-city','bg-ocean'); board.classList.add('bg-'+(kind||'forest')); $('illus').textContent=(LEVELS[LV]&&LEVELS[LV].illus)||'🌲'; }
-  function renderMap(){ const g=$('mapGrid'); g.innerHTML=''; const best=+(localStorage.getItem('esg.bestLV')||1); LEVELS.forEach((cfg,i)=>{ const lock=i+1>best; const n=document.createElement('div'); n.className='node fade-enter'; n.innerHTML='<b>關卡 '+(i+1)+'</b> <span style="opacity:.75">'+cfg.bg+'｜目標'+cfg.goal+'｜'+cfg.time+'s '+(cfg.boss?'｜Boss':'')+'</span><div style="margin-top:6px;text-align:right"><button class="btn" '+(lock?'disabled':'')+' data-lv="'+i+'">開始</button></div>'; g.appendChild(n); }); g.querySelectorAll('button[data-lv]').forEach(b=>b.addEventListener('click',function(){ $('mapModal').classList.remove('show'); startLevel(+this.dataset.lv); })); }
+  function renderMap(){ const g=$('mapGrid'); g.innerHTML=''; const best=+(localStorage.getItem('esg.bestLV')||1); LEVELS.forEach((cfg,i)=>{ const lock=i+1>best; const n=document.createElement('div'); n.className='node fade-enter'; n.innerHTML='<b>關卡 '+(i+1)+'</b> <span style="opacity:.75">'+cfg.bg+'｜目標'+cfg.goal+'｜'+cfg.time+'s '+(cfg.boss?'｜Boss':'')+'</span><div style="margin-top:6px;text-align:right"><button class="btn" '+(lock?'disabled':'')+' data-lv="'+i+'">開始</button></div>'; g.appendChild(n); }); g.querySelectorAll('button[data-lv]').forEach(b=>b.addEventListener('click',function(){ $('mapModal').classList.remove('show'); startLevel(+this.dataset.lv); })); g.scrollTop=0; }
   function saveBestLV(lv){ const best=+(localStorage.getItem('esg.bestLV')||1); if(lv>best){ localStorage.setItem('esg.bestLV', lv); }}
 
   const board=$('board'), fill=$('goalFill'), hpbar=$('hpbar'), hpfill=$('hpfill');
-  let score=0, combo=0, timeLeft=60, running=false, planted=0, spawnTimer=null, tickTimer=null, bossEl=null, bossHp=0, drainAura=null;
+  let score=0, combo=0, timeLeft=60, running=false, spawnTimer=null, tickTimer=null, bossEl=null, bossHp=0, drainAura=null;
   const EMOJIS=['🍀','🌿','🌳','💧','⚡','🌎'];
 
   function startLevel(i){ LV=i; const cfg=LEVELS[LV]||LEVELS[0]; const d=DIFF[diff]||DIFF.normal;
@@ -716,18 +639,8 @@ $('resetAllBtn')?.addEventListener('mouseleave', ()=> clearTimeout(this._t));
   function spawnToken(){ if(!running) return; const t=document.createElement('div'); t.className='token'; const w=board.clientWidth, h=board.clientHeight; t.style.left=(Math.random()*(w-96)+6)+'px'; t.style.top=(Math.random()*(h-160)+100)+'px'; t.innerHTML='<div class="bubble"><div class="emoji">'+EMOJIS[Math.floor(Math.random()*EMOJIS.length)]+'</div></div>'; t.addEventListener('click',function(){hitToken(t)}); board.appendChild(t); setTimeout(()=>{ t.remove(); }, 3200); }
   function currentGoal(){ return parseInt($('goal').textContent,10)||0; }
   function hitToken(t){ if(!running) return; blip(720,.08); score+=10; combo=Math.min(99,combo+1); $('score').textContent=score; $('combo').textContent=combo+'x'; fill.style.width=Math.min(100,(score/currentGoal())*100)+'%'; t.remove(); if(score>=currentGoal()){ const cfg=LEVELS[LV]; if(cfg.boss && !bossEl){ spawnBoss(); } else { openQuiz(cfg.quiz); } } }
-  function openQuiz(n){
-  needCorrect = n;
-  correctThisRound = 0;
-  roundAsked = [];                      // ✅ 每輪開始清空
-  $('quizModal').classList.add('show');
-  buildTabs();
-  renderQuiz();
-}
 
-  // =====================
-  // 🌳 圖鑑 + 存檔
-  // =====================
+  // ===================== 圖鑑 + 存檔 =====================
   const TREEDEX_BASE=[
     {name:'台灣杉',desc:'固碳佳，針葉樹',stage:0,unlocked:true},
     {name:'烏心石',desc:'樟科，耐陰耐風',stage:0,unlocked:false},
@@ -807,7 +720,7 @@ $('resetAllBtn')?.addEventListener('mouseleave', ()=> clearTimeout(this._t));
   function buildTabs(){ const box=$('qTabs'); box.innerHTML=''; CAT.forEach(c=>{ const b=document.createElement('button'); b.className='btn'; b.textContent=c; b.dataset.c=c; b.addEventListener('click',()=>{ weight[c]=Math.min(5,(weight[c]||1)+1); updateTabs(); toastInfo(c+' 權重 +1'); }); box.appendChild(b); }); updateTabs(); }
   function updateTabs(){ Array.prototype.forEach.call(document.querySelectorAll('#qTabs .btn'),function(b){ const c=b.dataset.c; const on=(weight[c]||1)>=4; if(on){ b.classList.add('primary'); }else{ b.classList.remove('primary'); } }); updateStats(); }
 
-  // 你的題庫（原本 ans 欄位），系統會自動相容
+  // 題庫（支援 ans 或 i 欄位）
   let QUIZ=[
     {cat:'能源類',q:'冷氣開幾度最剛好又省電？',a:['18°C','22°C','24–26°C','30°C'],ans:2},
     {cat:'能源類',q:'白天開冷氣時，要怎麼做最省電？',a:['拉上窗簾','開窗通風','開門散熱','調最強風'],ans:0},
@@ -840,36 +753,13 @@ $('resetAllBtn')?.addEventListener('mouseleave', ()=> clearTimeout(this._t));
     {cat:'溫室氣體類',q:'為什麼地球會越來越熱？',a:['溫室氣體太多，熱氣跑不出去','太陽變大了','月亮變近了','空氣變少了'],ans:0},
     {cat:'溫室氣體類',q:'下列哪一個屬於「用別人發的電」（範疇二）？',a:['澆花','騎腳踏車上學','拿家裡回收瓶罐','開冷氣、打開燈'],ans:3}
   ];
-
-  // ✅ 取正確答案 index（相容 it.i 或 it.ans）
-  function getCorrectIndex(it){
-    if (typeof it.i === 'number') return it.i;
-    if (typeof it.ans === 'number') return it.ans;
-    return 0;
-  }
+  function getCorrectIndex(it){ if (typeof it.i === 'number') return it.i; if (typeof it.ans === 'number') return it.ans; return 0; }
 
   let stats={right:0,wrong:0};
-  // ✅ 反重複抽題：本輪與今天（跨多輪）
-let roundAsked = []; // 當次 openQuiz() 期間的已出題索引
-
-function loadAskedGlobal(){
-  try{
-    const raw = localStorage.getItem('esg.asked.' + todayKey()); // 你下方已定義 todayKey()，函式宣告可提前使用
-    const arr = JSON.parse(raw);
-    return Array.isArray(arr) ? new Set(arr) : new Set();
-  }catch(e){ return new Set(); }
-}
-function saveAskedGlobal(set){
-  try{
-    localStorage.setItem('esg.asked.' + todayKey(), JSON.stringify(Array.from(set)));
-  }catch(e){}
-}
-let askedGlobal = loadAskedGlobal();  // 記錄今天已出過題目的索引（Set）
-
   function updateStats(){ $('statTotal').textContent=QUIZ.length; $('statRight').textContent=stats.right; $('statWrong').textContent=stats.wrong; const t=stats.right+stats.wrong; $('statAcc').textContent=t?Math.round(stats.right/t*100)+'%':'0%'; }
 
   // 🔁 匯入模式（合併／覆蓋）
-  let importMode = localStorage.getItem('esg.importMode') || 'merge'; // 'merge' | 'overwrite'
+  let importMode = localStorage.getItem('esg.importMode') || 'merge';
   const modeBtn = $('importModeBtn');
   function renderImportMode(){
     if (!modeBtn) return;
@@ -895,10 +785,10 @@ let askedGlobal = loadAskedGlobal();  // 記錄今天已出過題目的索引（
     for(let idx=0; idx<lines.length; idx++){
       const L = lines[idx];
       const parts = [];
-      // 允許帶引號的 CSV：簡易 parse（逗號分隔，雙引號包）
+      // 允許帶引號 CSV
       let cur='', inQ=false;
       for (let i=0;i<L.length;i++){
-        const ch=L[i], nx=L[i+1];
+        const ch=L[i];
         if (ch === '"' ){ inQ = !inQ; continue; }
         if (ch === ',' && !inQ){ parts.push(cur); cur=''; continue; }
         cur += ch;
@@ -923,7 +813,6 @@ let askedGlobal = loadAskedGlobal();  // 記錄今天已出過題目的索引（
       toastSuccess('🌱 <b style="color:#bbf7d0">合併模式</b>｜新增 '+add+' 題，略過 '+skip+' 行', 3800);
     }
   }
-
   function quizToCsv(){
     const esc = (s)=> String(s==null?'':s).replace(/"/g,'""');
     return QUIZ.map(function(it){
@@ -933,61 +822,99 @@ let askedGlobal = loadAskedGlobal();  // 記錄今天已出過題目的索引（
     }).join('\n');
   }
 
+  // 反重複抽題：本輪與今天（跨多輪）
   let needCorrect=1, correctThisRound=0, qIndex=-1;
-  function openQuiz(n){ needCorrect=n; correctThisRound=0; $('quizModal').classList.add('show'); buildTabs(); renderQuiz(); }
-  function pickQuestion(){ const bag=[]; for(let i=0;i<QUIZ.length;i++){ const w=weight[QUIZ[i].cat]||1; for(let k=0;k<w;k++) bag.push(i); } return bag[Math.floor(Math.random()*bag.length)]||0; }
-  function renderQuiz(){
-  qIndex = pickQuestion();
-  const it = QUIZ[qIndex];
-  const box = $('quizBox');
+  let roundAsked = [];
+  function todayKey(){ const d=new Date(); return d.toISOString().slice(0,10); }
+  function loadAskedGlobal(){
+    try{
+      const raw = localStorage.getItem('esg.asked.' + todayKey());
+      const arr = JSON.parse(raw);
+      return Array.isArray(arr) ? new Set(arr) : new Set();
+    }catch(e){ return new Set(); }
+  }
+  function saveAskedGlobal(set){
+    try{ localStorage.setItem('esg.asked.' + todayKey(), JSON.stringify(Array.from(set))); }catch(e){}
+  }
+  let askedGlobal = loadAskedGlobal();
 
-  let opts = '';
-  for(let idx=0; idx<it.a.length; idx++){
-    opts += '<label style="display:block;margin:6px 0"><input type="radio" name="q" value="'+idx+'"> '+it.a[idx]+'</label>';
+  function openQuiz(n){ needCorrect=n; correctThisRound=0; roundAsked=[]; $('quizModal').classList.add('show'); buildTabs(); renderQuiz(); }
+
+  function pickQuestion(){
+    // 權重袋
+    const bag=[];
+    for(let i=0;i<QUIZ.length;i++){
+      const w=weight[QUIZ[i].cat]||1;
+      if (askedGlobal.has(i)) continue; // 避免今天重複
+      for(let k=0;k<w;k++) bag.push(i);
+    }
+    // 如果今天全抽過了，就退回允許重複（但避開本輪 roundAsked）
+    if(bag.length===0){
+      for(let i=0;i<QUIZ.length;i++){
+        const w=weight[QUIZ[i].cat]||1;
+        for(let k=0;k<w;k++) bag.push(i);
+      }
+    }
+    // 避開本輪 roundAsked
+    let tries=0, pick=null;
+    while(tries<100){
+      const cand = bag[Math.floor(Math.random()*bag.length)] ?? 0;
+      if(!roundAsked.includes(cand)){ pick=cand; break; }
+      tries++;
+    }
+    return pick==null ? 0 : pick;
   }
 
-  box.innerHTML = '<div class="node"><b>['+(it.cat||'')+'] '+it.q+'</b>'+opts+
-    '<div style="margin-top:8px"><button class="btn" id="submitQ">提交</button></div>'+
-    '<div id="qFeedback" style="margin-top:6px;font-weight:900"></div></div>';
+  function renderQuiz(){
+    qIndex = pickQuestion();
+    const it = QUIZ[qIndex];
+    const box = $('quizBox');
 
-  // ✅ 登記到本輪已問，避免「下一題」又抽回來
-  if(!roundAsked.includes(qIndex)) roundAsked.push(qIndex);
+    let opts = '';
+    for(let idx=0; idx<it.a.length; idx++){
+      opts += '<label style="display:block;margin:6px 0"><input type="radio" name="q" value="'+idx+'"> '+it.a[idx]+'</label>';
+    }
+    box.innerHTML = '<div class="node"><b>['+(it.cat||'')+'] '+it.q+'</b>'+opts+
+      '<div style="margin-top:8px"><button class="btn" id="submitQ">提交</button></div>'+
+      '<div id="qFeedback" style="margin-top:6px;font-weight:900"></div></div>';
 
-  $('submitQ').addEventListener('click', checkQ);
-  updateStats();
-}
+    // 登記到本輪已問
+    if(!roundAsked.includes(qIndex)) roundAsked.push(qIndex);
+
+    $('submitQ').addEventListener('click', checkQ);
+    updateStats();
+  }
 
   function checkQ(){
-  const it = QUIZ[qIndex];
-  const sel = document.querySelector('input[name="q"]:checked');
-  if(!sel) return;
+    const it = QUIZ[qIndex];
+    const sel = document.querySelector('input[name="q"]:checked');
+    if(!sel) return;
 
-  const correct = getCorrectIndex(it);
-  if(+sel.value === correct){
-    blip(860,.12);
-    $('qFeedback').textContent = '✅ 答對了！' + (it.why ? (' ' + it.why) : '');
-    stats.right++;
-    checkUnlocks();
-    correctThisRound++;
-    plantTree('🌿');
+    const correct = getCorrectIndex(it);
+    if(+sel.value === correct){
+      blip(860,.12);
+      $('qFeedback').textContent = '✅ 答對了！' + (it.why ? (' ' + it.why) : '');
+      stats.right++;
+      checkUnlocks();
+      correctThisRound++;
+      plantTree('🌿');
 
-    // ✅ 記錄今天已問，避免本日重複
-    askedGlobal.add(qIndex);
-    saveAskedGlobal(askedGlobal);
+      askedGlobal.add(qIndex);
+      saveAskedGlobal(askedGlobal);
 
-    if(correctThisRound >= needCorrect){
-      $('quizModal').classList.remove('show');
-      gameOver(true);
+      if(correctThisRound >= needCorrect){
+        $('quizModal').classList.remove('show');
+        gameOver(true);
+      } else {
+        renderQuiz();
+      }
     } else {
-      renderQuiz(); // 再抽一題（會避開 roundAsked 既有題）
+      blip(200,.12);
+      $('qFeedback').textContent = '❌ 再想想～ ' + (it.why || '');
+      stats.wrong++;
     }
-  } else {
-    blip(200,.12);
-    $('qFeedback').textContent = '❌ 再想想～ ' + (it.why || '');
-    stats.wrong++;
+    updateStats();
   }
-  updateStats();
-}
 
   $('nextQ').addEventListener('click',renderQuiz);
   $('importCsv').addEventListener('click',()=>{ const f=$('csvQ').files&&$('csvQ').files[0]; if(!f) return alert('請先選擇 .csv'); const fr=new FileReader(); fr.onload=e=>csvToQuiz(String((e.target&&e.target.result)||'')); fr.readAsText(f,'utf-8'); });
@@ -1022,7 +949,6 @@ let askedGlobal = loadAskedGlobal();  // 記錄今天已出過題目的索引（
     {id:'wq4',text:'種下 30 棵樹',need:30},
     {id:'wq5',text:'完成 5 項 GHG 清單勾選',need:5}
   ]; }
-  function todayKey(){ const d=new Date(); return d.toISOString().slice(0,10); }
   function weekKey(){ const d=new Date(); const base=new Date(d.getFullYear(),0,1); const wk=Math.ceil((((d-base)/86400000)+base.getDay()+1)/7); return d.getFullYear()+'-W'+wk; }
   function ensureTasks(){ const dk='esg.daily.'+todayKey(), wk='esg.weekly.'+weekKey(); if(!localStorage.getItem(dk)){ localStorage.setItem(dk, JSON.stringify({tasks:genDailyTasks(),done:{}})); } if(!localStorage.getItem(wk)){ localStorage.setItem(wk, JSON.stringify({tasks:genWeeklyTasks(),done:{}})); } }
   function taskLi(t,scope){ const done=(scope.done[t.id]); return '<li><div class="todo-top"><label><input type="checkbox" data-scope="'+scope.key+'" data-id="'+t.id+'" '+(done?'checked':'')+'> '+t.text+'</label><span class="todo-badge">'+(scope.key==='D'?'今日':'本週')+'</span></div><div class="todo-bar"><div class="todo-fill" style="width:'+(done?100:0)+'%"></div></div></li>'; }
@@ -1108,7 +1034,65 @@ let askedGlobal = loadAskedGlobal();  // 記錄今天已出過題目的索引（
     pager && pager.addEventListener('touchend',()=>{ if(Math.abs(dx)>50){ showQuestPage(questPage+(dx<0?1:-1)); } });
   }
 
+  // ====== ♻️ 全重置（localStorage + caches + ServiceWorker + Reload）======
+  (function attachResetAll(){
+    const btn = document.getElementById('resetAllBtn');
+    if(!btn) return;
+    btn.addEventListener('click', async () => {
+      if(!confirm('要重置所有紀錄與快取嗎？\n（圖鑑、排行、每日/每週任務、今日抽題紀錄；保留玩家名稱/難度/音樂設定）')) return;
+
+      // 停止遊戲
+      try {
+        running = false;
+        if (spawnTimer) clearInterval(spawnTimer);
+        if (tickTimer)  clearInterval(tickTimer);
+      } catch(e){}
+
+      // 清除 esg.* 但保留 esg.player / esg.diff / esg.music / esg.vol / esg.importMode
+      try {
+        const keep = new Set(['esg.player','esg.diff','esg.music','esg.vol','esg.importMode']);
+        const toDel = [];
+        for (let i=0; i<localStorage.length; i++){
+          const k = localStorage.key(i);
+          if (!k) continue;
+          if ((k.startsWith('esg.') || k.startsWith('esg')) && !keep.has(k)) {
+            toDel.push(k);
+          }
+        }
+        // 另外清每日/每週/今日抽題
+        for (let i=0; i<localStorage.length; i++){
+          const k = localStorage.key(i);
+          if (!k) continue;
+          if (k.startsWith('esg.daily.') || k.startsWith('esg.weekly.') || k.startsWith('esg.asked.')) {
+            toDel.push(k);
+          }
+        }
+        Array.from(new Set(toDel)).forEach(k=>localStorage.removeItem(k));
+      } catch(e){ console.warn('localStorage 清除失敗', e); }
+
+      // 刪除 caches
+      try {
+        if ('caches' in window) {
+          const names = await caches.keys();
+          await Promise.all(names.map(n => caches.delete(n)));
+        }
+      } catch(e){ console.warn('刪除 caches 失敗', e); }
+
+      // 反註冊 Service Worker
+      try {
+        if ('serviceWorker' in navigator) {
+          const regs = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(regs.map(r => r.unregister()));
+        }
+      } catch(e){ console.warn('SW 反註冊失敗', e); }
+
+      alert('已清除紀錄與快取，將重新載入頁面');
+      location.reload();
+    });
+  })();
+
   // 初始化
+  let planted=0; // 放這裡讓 reset 能設回 0
   document.addEventListener('DOMContentLoaded',()=>{ renderDex(); renderFacts(); renderMap();
     if(location.hash==='#unlockAll'){
       DEX.forEach(t=>{ t.unlocked=true; t.stage=2; });
@@ -1118,13 +1102,12 @@ let askedGlobal = loadAskedGlobal();  // 記錄今天已出過題目的索引（
 })();
 </script>
 
-<!-- ✅ PWA: register SW -->
-<!-- ✅ SW register: 支援 GitHub Pages 子路徑 -->
+<!-- ✅ PWA: register SW（支援 GitHub Pages 子路徑） -->
 <script>
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   window.addEventListener('load', () => {
-    // basePath 例如：/UDMgame/
     const parts = location.pathname.split('/').filter(Boolean);
+    // 若為 GitHub Pages 下的 /UDMgame/，basePath 會是 "/UDMgame/"
     const basePath = parts.length ? `/${parts[0]}/` : '/';
     const swUrl = `${basePath}sw.js`;
     navigator.serviceWorker.register(swUrl, { scope: basePath })
@@ -1135,7 +1118,6 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   console.warn('SW disabled on non-http(s) origin.');
 }
 </script>
-
 
 <!-- 📲 PWA 安裝邏輯 -->
 <script>
