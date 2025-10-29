@@ -170,6 +170,8 @@
       <button class="btn primary" id="startBtn">開始</button>
       <button class="btn blue" id="pauseBtn">暫停</button>
       <button class="btn" id="soundBtn" aria-pressed="false">🔈</button>
+      <button class="btn" id="resetAllBtn">♻️ 重置紀錄</button>
+
       <!-- 📲 PWA 下載 -->
       <button class="btn" id="installBtn">📲 下載</button>
     </div>
@@ -611,6 +613,78 @@ const toastError   = (m,ms=3600)=> toast(m,{type:'error',duration:ms});
       playTrack(musicMode);
     }
   }
+  // ===== 全部重置（保留玩家名稱/偏好） =====
+function resetProgressRecords(opts={ keepPrefs:true, keepName:true }){
+  // 要清除的 key（進度/資料）
+  const keys = ['esg.bestLV','esg.dex','esg.ach','esg.lb.v54'];
+
+  // 這些是「以日期為前綴」的動態 key（每日/每週任務、今日已出題）
+  const prefixes = ['esg.daily.','esg.weekly.','esg.asked.'];
+
+  // 若也想清偏好或名稱，就把它們也放進 keys
+  if (!opts.keepPrefs){
+    keys.push('esg.music','esg.vol','esg.diff','esg.importMode');
+  }
+  if (!opts.keepName){
+    keys.push('esg.player');
+  }
+
+  // 先把所有 localStorage key 抓出來，避免迴圈刪除時 length 變動
+  const allKeys = [];
+  for (let i=0; i<localStorage.length; i++){
+    allKeys.push(localStorage.key(i));
+  }
+
+  // 清除前綴類
+  for (const k of allKeys){
+    if (prefixes.some(p => k.startsWith(p))){
+      try { localStorage.removeItem(k); } catch(e){}
+    }
+  }
+
+  // 清除指定 keys
+  for (const k of keys){
+    try { localStorage.removeItem(k); } catch(e){}
+  }
+
+  // ===== 重置執行期狀態 & 重新渲染 =====
+  planted = 0; score = 0; combo = 0;
+  $('trees').textContent = 0;
+  $('score').textContent = 0;
+  $('combo').textContent = '0x';
+  fill.style.width = '0%';
+  hpbar.style.display = 'none';
+
+  // 還原圖鑑到預設、刷新 UI
+  DEX = loadDex();         // 會自動回到 baseDex()
+  renderDex();
+  renderLB();
+  renderMap();
+  updateStats();
+
+  toastSuccess('✅ 已重置遊戲紀錄（保留名稱與偏好）');
+}
+
+// 綁定按鈕
+$('resetAllBtn')?.addEventListener('click', ()=>{
+  if (confirm('確定要重置紀錄嗎？\n（會清除關卡進度、圖鑑、成就、排行榜、每日/每週任務、今日抽題紀錄；保留名稱/難度/音樂偏好）')){
+    resetProgressRecords({ keepPrefs:true, keepName:true });
+  }
+});
+
+/* 進階：長按 2 秒做「完全重置」（連名稱/偏好也清）
+$('resetAllBtn')?.addEventListener('mousedown', ()=>{
+  this._t = setTimeout(()=>{
+    if (confirm('⚠️ 完全重置：連名稱與偏好也清除。要繼續嗎？')){
+      resetProgressRecords({ keepPrefs:false, keepName:false });
+      toastWarn('已完全重置，請重新設定名稱與偏好');
+    }
+  }, 2000);
+});
+$('resetAllBtn')?.addEventListener('mouseup', ()=> clearTimeout(this._t));
+$('resetAllBtn')?.addEventListener('mouseleave', ()=> clearTimeout(this._t));
+*/
+
 
   // 關卡配置
   const LEVELS=[
@@ -642,6 +716,14 @@ const toastError   = (m,ms=3600)=> toast(m,{type:'error',duration:ms});
   function spawnToken(){ if(!running) return; const t=document.createElement('div'); t.className='token'; const w=board.clientWidth, h=board.clientHeight; t.style.left=(Math.random()*(w-96)+6)+'px'; t.style.top=(Math.random()*(h-160)+100)+'px'; t.innerHTML='<div class="bubble"><div class="emoji">'+EMOJIS[Math.floor(Math.random()*EMOJIS.length)]+'</div></div>'; t.addEventListener('click',function(){hitToken(t)}); board.appendChild(t); setTimeout(()=>{ t.remove(); }, 3200); }
   function currentGoal(){ return parseInt($('goal').textContent,10)||0; }
   function hitToken(t){ if(!running) return; blip(720,.08); score+=10; combo=Math.min(99,combo+1); $('score').textContent=score; $('combo').textContent=combo+'x'; fill.style.width=Math.min(100,(score/currentGoal())*100)+'%'; t.remove(); if(score>=currentGoal()){ const cfg=LEVELS[LV]; if(cfg.boss && !bossEl){ spawnBoss(); } else { openQuiz(cfg.quiz); } } }
+  function openQuiz(n){
+  needCorrect = n;
+  correctThisRound = 0;
+  roundAsked = [];                      // ✅ 每輪開始清空
+  $('quizModal').classList.add('show');
+  buildTabs();
+  renderQuiz();
+}
 
   // =====================
   // 🌳 圖鑑 + 存檔
@@ -767,6 +849,23 @@ const toastError   = (m,ms=3600)=> toast(m,{type:'error',duration:ms});
   }
 
   let stats={right:0,wrong:0};
+  // ✅ 反重複抽題：本輪與今天（跨多輪）
+let roundAsked = []; // 當次 openQuiz() 期間的已出題索引
+
+function loadAskedGlobal(){
+  try{
+    const raw = localStorage.getItem('esg.asked.' + todayKey()); // 你下方已定義 todayKey()，函式宣告可提前使用
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? new Set(arr) : new Set();
+  }catch(e){ return new Set(); }
+}
+function saveAskedGlobal(set){
+  try{
+    localStorage.setItem('esg.asked.' + todayKey(), JSON.stringify(Array.from(set)));
+  }catch(e){}
+}
+let askedGlobal = loadAskedGlobal();  // 記錄今天已出過題目的索引（Set）
+
   function updateStats(){ $('statTotal').textContent=QUIZ.length; $('statRight').textContent=stats.right; $('statWrong').textContent=stats.wrong; const t=stats.right+stats.wrong; $('statAcc').textContent=t?Math.round(stats.right/t*100)+'%':'0%'; }
 
   // 🔁 匯入模式（合併／覆蓋）
@@ -837,8 +936,59 @@ const toastError   = (m,ms=3600)=> toast(m,{type:'error',duration:ms});
   let needCorrect=1, correctThisRound=0, qIndex=-1;
   function openQuiz(n){ needCorrect=n; correctThisRound=0; $('quizModal').classList.add('show'); buildTabs(); renderQuiz(); }
   function pickQuestion(){ const bag=[]; for(let i=0;i<QUIZ.length;i++){ const w=weight[QUIZ[i].cat]||1; for(let k=0;k<w;k++) bag.push(i); } return bag[Math.floor(Math.random()*bag.length)]||0; }
-  function renderQuiz(){ qIndex=pickQuestion(); const it=QUIZ[qIndex]; const box=$('quizBox'); let opts=''; for(let idx=0; idx<it.a.length; idx++){ const o=it.a[idx]; opts+='<label style="display:block;margin:6px 0"><input type="radio" name="q" value="'+idx+'"> '+o+'</label>'; } box.innerHTML='<div class="node"><b>['+(it.cat||'')+'] '+it.q+'</b>'+opts+'<div style="margin-top:8px"><button class="btn" id="submitQ">提交</button></div><div id="qFeedback" style="margin-top:6px;font-weight:900"></div></div>'; $('submitQ').addEventListener('click',checkQ); updateStats(); }
-  function checkQ(){ const it=QUIZ[qIndex]; const sel=document.querySelector('input[name="q"]:checked'); if(!sel) return; const correct = getCorrectIndex(it); if(+sel.value===correct){ blip(860,.12); $('qFeedback').textContent='✅ 答對了！'+(it.why?(' '+it.why):''); stats.right++; checkUnlocks(); correctThisRound++; plantTree('🌿'); if(correctThisRound>=needCorrect){ $('quizModal').classList.remove('show'); gameOver(true); } } else { blip(200,.12); $('qFeedback').textContent='❌ 再想想～ '+(it.why||''); stats.wrong++; } updateStats(); }
+  function renderQuiz(){
+  qIndex = pickQuestion();
+  const it = QUIZ[qIndex];
+  const box = $('quizBox');
+
+  let opts = '';
+  for(let idx=0; idx<it.a.length; idx++){
+    opts += '<label style="display:block;margin:6px 0"><input type="radio" name="q" value="'+idx+'"> '+it.a[idx]+'</label>';
+  }
+
+  box.innerHTML = '<div class="node"><b>['+(it.cat||'')+'] '+it.q+'</b>'+opts+
+    '<div style="margin-top:8px"><button class="btn" id="submitQ">提交</button></div>'+
+    '<div id="qFeedback" style="margin-top:6px;font-weight:900"></div></div>';
+
+  // ✅ 登記到本輪已問，避免「下一題」又抽回來
+  if(!roundAsked.includes(qIndex)) roundAsked.push(qIndex);
+
+  $('submitQ').addEventListener('click', checkQ);
+  updateStats();
+}
+
+  function checkQ(){
+  const it = QUIZ[qIndex];
+  const sel = document.querySelector('input[name="q"]:checked');
+  if(!sel) return;
+
+  const correct = getCorrectIndex(it);
+  if(+sel.value === correct){
+    blip(860,.12);
+    $('qFeedback').textContent = '✅ 答對了！' + (it.why ? (' ' + it.why) : '');
+    stats.right++;
+    checkUnlocks();
+    correctThisRound++;
+    plantTree('🌿');
+
+    // ✅ 記錄今天已問，避免本日重複
+    askedGlobal.add(qIndex);
+    saveAskedGlobal(askedGlobal);
+
+    if(correctThisRound >= needCorrect){
+      $('quizModal').classList.remove('show');
+      gameOver(true);
+    } else {
+      renderQuiz(); // 再抽一題（會避開 roundAsked 既有題）
+    }
+  } else {
+    blip(200,.12);
+    $('qFeedback').textContent = '❌ 再想想～ ' + (it.why || '');
+    stats.wrong++;
+  }
+  updateStats();
+}
+
   $('nextQ').addEventListener('click',renderQuiz);
   $('importCsv').addEventListener('click',()=>{ const f=$('csvQ').files&&$('csvQ').files[0]; if(!f) return alert('請先選擇 .csv'); const fr=new FileReader(); fr.onload=e=>csvToQuiz(String((e.target&&e.target.result)||'')); fr.readAsText(f,'utf-8'); });
   $('exportCsv').addEventListener('click',()=>{ const blob=new Blob([quizToCsv()],{type:'text/csv;charset=utf-8'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='quiz_export.csv'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),500); });
